@@ -30,8 +30,10 @@ export default function AuthPage() {
             if (isLogin) {
                 result = await supabase.auth.signInWithPassword({ email, password })
                 console.log("Login result:", result)
+                setMessage("Login successful!")
             } else {
                 result = await supabase.auth.signUp({ email, password })
+                 setMessage("Signup successful! Please check your email to confirm your account. Login after confirmation.")
                 console.log("Signup result:", result)
             }
 
