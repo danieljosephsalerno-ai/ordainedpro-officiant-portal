@@ -3,12 +3,12 @@
   publish = ".next"
 
 [images]
-  remote_images = [
-    "https://source.unsplash.com/.*",
-    "https://images.unsplash.com/.*",
-    "https://ext.same-assets.com/.*",
-    "https://ugc.same-assets.com/.*"
-  ]
+remote_images = [
+  "https://source.unsplash.com/.*",
+  "https://images.unsplash.com/.*",
+  "https://ext.same-assets.com/.*",
+  "https://ugc.same-assets.com/.*"
+]
 
 [[plugins]]
-  package = "@netlify/plugin-nextjs"
+package = "@netlify/plugin-nextjs"
