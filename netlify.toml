@@ -1,18 +1,17 @@
 [build]
-  command = "npm install && npm run build"
+  command = "npm ci && npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--include=dev"
-
-[images]
-remote_images = [
-  "https://source.unsplash.com/.*",
-  "https://images.unsplash.com/.*",
-  "https://ext.same-assets.com/.*",
-  "https://ugc.same-assets.com/.*"
-]
+  NPM_FLAGS = "--legacy-peer-deps"
 
 [[plugins]]
-package = "@netlify/plugin-nextjs"
+  package = "@netlify/plugin-nextjs"
+
+# Headers for static assets
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
