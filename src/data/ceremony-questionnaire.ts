@@ -1,7 +1,6 @@
 // Ceremony Questionnaire - Questions Mr. Script asks to personalize the ceremony
 // Based on professional officiant intake questionnaire
 // NOTE: Basic info and Quick Setup selections are auto-populated - no need to re-ask
-
 export interface QuestionnaireQuestion {
   id: string;
   category: string;
@@ -12,7 +11,6 @@ export interface QuestionnaireQuestion {
   required: boolean;
   aiPromptKey: string; // How this maps to the AI prompt
 }
-
 export const QUESTIONNAIRE_CATEGORIES = [
   { id: "ceremony-style", label: "Ceremony Style", icon: "🎨" },
   { id: "love-story", label: "Your Love Story", icon: "💕" },
@@ -20,7 +18,6 @@ export const QUESTIONNAIRE_CATEGORIES = [
   { id: "unity-symbols", label: "Unity & Symbols", icon: "🕯️" },
   { id: "special-moments", label: "Special Moments", icon: "✨" },
 ];
-
 // Data that is auto-populated from Quick Setup (not asked in questionnaire)
 export const AUTO_POPULATED_FIELDS = [
   // From Wedding Couple card
@@ -39,7 +36,6 @@ export const AUTO_POPULATED_FIELDS = [
   "vowStyle",           // Vows dropdown
   "readingStyle",       // Reading Style dropdown
 ];
-
 export const CEREMONY_QUESTIONNAIRE: QuestionnaireQuestion[] = [
   // === CEREMONY STYLE (Details beyond dropdown selection) ===
   {
@@ -229,17 +225,14 @@ export const CEREMONY_QUESTIONNAIRE: QuestionnaireQuestion[] = [
     aiPromptKey: "otherSpecial",
   },
 ];
-
 // Helper function to get questions by category
 export const getQuestionsByCategory = (categoryId: string): QuestionnaireQuestion[] => {
   return CEREMONY_QUESTIONNAIRE.filter((q) => q.category === categoryId);
 };
-
 // Helper function to get required questions
 export const getRequiredQuestions = (): QuestionnaireQuestion[] => {
   return CEREMONY_QUESTIONNAIRE.filter((q) => q.required);
 };
-
 // Helper function to count questions per category
 export const getQuestionCountByCategory = (): Record<string, number> => {
   const counts: Record<string, number> = {};
@@ -248,7 +241,6 @@ export const getQuestionCountByCategory = (): Record<string, number> => {
   });
   return counts;
 };
-
 // Total questions
 export const TOTAL_QUESTIONS = CEREMONY_QUESTIONNAIRE.length;
 export const REQUIRED_QUESTIONS = CEREMONY_QUESTIONNAIRE.filter((q) => q.required).length;

@@ -3,13 +3,11 @@ import { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
-
 interface ChatInputProps {
   onSubmit: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
 }
-
 // Memoized component to prevent re-renders from parent
 const ChatInput = memo(function ChatInput({
   onSubmit,
@@ -19,7 +17,6 @@ const ChatInput = memo(function ChatInput({
   // Use ref for the actual input value to avoid re-renders
   const inputRef = useRef<HTMLInputElement>(null);
   const [localValue, setLocalValue] = useState("");
-
   const handleSubmit = useCallback(() => {
     const value = localValue.trim();
     if (!value || disabled) return;
@@ -30,18 +27,15 @@ const ChatInput = memo(function ChatInput({
       inputRef.current.value = "";
     }
   }, [localValue, disabled, onSubmit]);
-
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
   }, [handleSubmit]);
-
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalValue(e.target.value);
   }, []);
-
   return (
     <div className="flex items-center space-x-2">
       <Input
@@ -65,5 +59,4 @@ const ChatInput = memo(function ChatInput({
     </div>
   );
 });
-
 export default ChatInput;
