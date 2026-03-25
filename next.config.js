@@ -1,6 +1,10 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["*.preview.same-app.com"],
+  // Set the output file tracing root to this project directory
+  // This prevents conflicts with parent directory lockfiles
+  outputFileTracingRoot: path.join(__dirname, './'),
   images: {
     unoptimized: true,
     domains: [
