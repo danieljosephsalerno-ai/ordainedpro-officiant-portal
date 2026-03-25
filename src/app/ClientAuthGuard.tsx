@@ -14,12 +14,14 @@ export default function ClientAuthGuard() {
     // Check current session
     const checkAuth = async () => {
       try {
+        // Use getSession instead of getUser - it reads from storage
         const { data: { session }, error } = await supabase.auth.getSession()
-
+        
+        // Check both storages directly
         const storageKey = 'sb-ailrvrxibpizbvyroonp-auth-token'
         const storedSessionS = typeof window !== 'undefined' ? sessionStorage.getItem(storageKey) : null
         const storedSessionL = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
-
+        
         console.log("🔍 Client session check:", {
           hasSession: !!session,
           hasUser: !!session?.user,
@@ -34,7 +36,7 @@ export default function ClientAuthGuard() {
           allSessionKeys: typeof window !== 'undefined' ? Object.keys(sessionStorage) : [],
           allLocalKeys: typeof window !== 'undefined' ? Object.keys(localStorage) : []
         })
-
+        
         if (!session?.user) {
           console.log("❌ No session found, redirecting to /auth")
           setLoading(false)
