@@ -8143,7 +8143,10 @@ ${invoiceForm.items
                       </div>
                       {(editCoupleInfo.brideEmail || editCoupleInfo.groomEmail) && (
                         <p className="text-xs text-gray-500 text-center">
-                          Email will be sent to: {editCoupleInfo.brideEmail || editCoupleInfo.groomEmail}
+                          Email will be sent to:{" "}
+                          {editCoupleInfo.brideEmail && editCoupleInfo.groomEmail
+                            ? `${editCoupleInfo.brideEmail} & ${editCoupleInfo.groomEmail}`
+                            : editCoupleInfo.brideEmail || editCoupleInfo.groomEmail}
                         </p>
                       )}
                     </div>
