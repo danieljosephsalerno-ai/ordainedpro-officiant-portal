@@ -181,12 +181,18 @@ export async function POST(request: NextRequest) {
     console.log("📝 Final reply content:", replyText);
 
     // Parse couple ID and officiant ID from the "to" address
-    // Format: reply+coupleId_officiantId@ziloesteo.resend.app
+    // IMPORTANT: Use the TO address from the WEBHOOK payload, not the fetched email
+    // The webhook payload has the plus-addressing: reply+coupleId_officiantId@ziloesteo.resend.app
     let coupleId: number | null = null;
     let officiantId: string | null = null;
 
-    const toAddress = Array.isArray(to) ? to[0] : to;
+    // Use webhook data's "to" field which has the plus-addressing
+    const webhookTo = webhookData.to;
+    const toAddress = Array.isArray(webhookTo) ? webhookTo[0] : webhookTo;
     const toAddressStr = typeof toAddress === 'string' ? toAddress : (toAddress?.email || toAddress?.address || '');
+
+    console.log("📧 Parsing couple ID from TO address:", toAddressStr);
+
     const plusMatch = toAddressStr.match(/reply\+(\d+)_([a-f0-9-]+)@/i);
 
     if (plusMatch) {
