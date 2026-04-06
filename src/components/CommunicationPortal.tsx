@@ -3478,7 +3478,7 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
       to: "both",
       customEmail: "",
       subject: `Wedding Script: ${script.title}`,
-      body: `Dear ${editCoupleInfo.brideName.split(" ")[0]} and ${editCoupleInfo.groomName.split(" ")[0]
+      body: `Dear ${(editCoupleInfo.brideName || "").split(" ")[0]} and ${(editCoupleInfo.groomName || "").split(" ")[0]
         },
 
 I've prepared your ceremony script "${script.title
@@ -4009,7 +4009,7 @@ ${shareScriptForm.body}`);
       to: "both", // Default to both couple members
       customEmail: "",
       subject: "Payment Reminder - Wedding Ceremony Services",
-      body: `Dear ${editCoupleInfo.brideName.split(" ")[0]} and ${editCoupleInfo.groomName.split(" ")[0]
+      body: `Dear ${(editCoupleInfo.brideName || "").split(" ")[0]} and ${(editCoupleInfo.groomName || "").split(" ")[0]
         },
 
 I hope this message finds you well and that your wedding planning is going smoothly!
@@ -6027,7 +6027,7 @@ pastor.michael@ordainedpro.com`,
 
   // Generate invoice email content
   const generateInvoiceContent = () => {
-    return `Dear ${editCoupleInfo.brideName.split(" ")[0]} and ${editCoupleInfo.groomName.split(" ")[0]
+    return `Dear ${(editCoupleInfo.brideName || "").split(" ")[0]} and ${(editCoupleInfo.groomName || "").split(" ")[0]
       },
 
 Congratulations on your upcoming wedding! Please find your ceremony services invoice attached.
@@ -8172,8 +8172,8 @@ ${invoiceForm.items
                           to: "both",
                           customEmail: "",
                           subject: "Wedding Documents for Review",
-                          body: `Dear ${editCoupleInfo.brideName.split(" ")[0]
-                            } and ${editCoupleInfo.groomName.split(" ")[0]
+                          body: `Dear ${(editCoupleInfo.brideName || "").split(" ")[0]
+                            } and ${(editCoupleInfo.groomName || "").split(" ")[0]
                             },\n\nI'm sharing some documents for your review. Please take a look and let me know if you have any questions or feedback.\n\nBest regards,\nPastor Michael Adams`,
                           includeNotes: true,
                         });
@@ -11268,7 +11268,7 @@ ${invoiceForm.items
         onOpenChange={setShowScheduleMeetingDialog}
         onScheduleMeeting={handleScheduleMeeting}
         coupleEmails={[editCoupleInfo.brideEmail, editCoupleInfo.groomEmail]}
-        coupleName={`${editCoupleInfo.brideName.split(" ")[0]} & ${editCoupleInfo.groomName.split(" ")[0]
+        coupleName={`${(editCoupleInfo.brideName || "").split(" ")[0]} & ${(editCoupleInfo.groomName || "").split(" ")[0]
           }`}
       />
 
