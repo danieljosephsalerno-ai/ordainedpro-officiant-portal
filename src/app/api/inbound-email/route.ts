@@ -311,41 +311,56 @@ export async function POST(request: NextRequest) {
 function extractReplyText(fullText: string): string {
   if (!fullText) return '';
 
-  // Common reply separators - be less aggressive
-  const separators = [
-    /On .+wrote:/i,                            // "On Mon, Jan 1, 2024 at 10:00 AM John wrote:"
-    /^From:.+/im,                              // "From: ..."
-    /^Sent:.+/im,                              // "Sent: ..."
+  let replyText = fullText;
+
+  // Step 1: Cut at common reply separators (find the EARLIEST one)
+  const separatorPatterns = [
+    /On [A-Za-z]{3,9},? [A-Za-z]{3,9} \d{1,2},? \d{4}[,\s]+(?:at )?\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?\s*.+?wrote:/is,  // Gmail-style: "On Mon, Apr 6, 2026 at 9:22 AM ... wrote:"
+    /On \d{1,2}\/\d{1,2}\/\d{2,4}.+wrote:/i,   // "On 4/6/2026 ... wrote:"
+    /\d{4}-\d{2}-\d{2}.+wrote:/i,              // "2026-04-06 ... wrote:"
+    /<.+@.+\.\w+>\s*wrote:/i,                  // "<email@domain.com> wrote:"
+    /^From:\s*.+$/im,                          // "From: ..."
+    /^Sent:\s*.+$/im,                          // "Sent: ..."
+    /^Date:\s*.+$/im,                          // "Date: ..."
+    /^To:\s*.+$/im,                            // "To: ..." (in forwarded emails)
     /-{5,}/,                                   // Line of 5+ dashes
     /_{5,}/,                                   // Line of 5+ underscores
-    /^>+\s/gm,                                 // Lines starting with > (quoted text)
+    /={5,}/,                                   // Line of 5+ equals
     /Sent from my iPhone/i,
     /Sent from my Android/i,
+    /Sent from Mail for Windows/i,
     /Get Outlook for/i,
     /This message was sent from/i,
     /^--\s*$/m,                                // Email signature delimiter
+    /^\*From:\*/im,                            // Markdown-style "**From:**"
   ];
 
-  let replyText = fullText;
-
-  // Find the earliest separator and cut there
   let earliestIndex = replyText.length;
 
-  for (const separator of separators) {
-    const match = replyText.match(separator);
-    if (match && match.index !== undefined && match.index > 10 && match.index < earliestIndex) {
+  for (const pattern of separatorPatterns) {
+    const match = replyText.match(pattern);
+    if (match && match.index !== undefined && match.index > 5 && match.index < earliestIndex) {
       earliestIndex = match.index;
     }
   }
 
-  // Get text before the separator
+  // Cut at the earliest separator
   replyText = replyText.substring(0, earliestIndex);
 
-  // Clean up
+  // Step 2: Remove any lines starting with ">" (quoted text that might be before separators)
+  replyText = replyText
+    .split('\n')
+    .filter(line => !line.trim().startsWith('>'))
+    .join('\n');
+
+  // Step 3: Clean up
   replyText = replyText
     .replace(/^\s+|\s+$/g, '')     // Trim whitespace
     .replace(/\r\n/g, '\n')        // Normalize line endings
-    .replace(/\n{3,}/g, '\n\n');   // Max 2 consecutive newlines
+    .replace(/\n{3,}/g, '\n\n')    // Max 2 consecutive newlines
+    .replace(/^[\s\n]+|[\s\n]+$/g, ''); // Trim again after filtering
+
+  console.log("📝 Cleaned reply text:", replyText.substring(0, 100));
 
   return replyText;
 }
