@@ -8,6 +8,7 @@
 - ✅ Inbound email webhook FIXED (now fetches content from Resend API)
 - ✅ Auto-refresh for messages (real-time + 30s polling fallback)
 - ✅ **FIXED: Add Ceremony crash** (onAddCeremony callback now properly called)
+- ✅ **FIXED: New couple profile crash** (null checks for .split() on names)
 - ✅ **Code synced to GitHub** - Netlify deploys automatically from `main` branch
 
 ## Deployment Status
@@ -16,7 +17,7 @@
 - **Live Site:** portal.ordainedpro.com
 
 ### Latest Commit on main:
-- `5ca5bab` - Fix: Add null checks for brideName/groomName.split() calls
+- `a2838b3` - Fix: Add comprehensive null checks for .split() on names
 
 ## To Check Deployment:
 1. Visit https://portal.ordainedpro.com

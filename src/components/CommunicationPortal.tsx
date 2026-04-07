@@ -7706,14 +7706,18 @@ ${invoiceForm.items
                 )}
                 <Separator />
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
-                    <Phone className="w-4 h-4 mr-2" />
-                    {editCoupleInfo.bridePhone}
-                  </div>
-                  <div className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
-                    <Mail className="w-4 h-4 mr-2" />
-                    {editCoupleInfo.brideEmail}
-                  </div>
+                  {(editCoupleInfo.bridePhone || editCoupleInfo.groomPhone) && (
+                    <div className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
+                      <Phone className="w-4 h-4 mr-2" />
+                      {editCoupleInfo.bridePhone || editCoupleInfo.groomPhone}
+                    </div>
+                  )}
+                  {(editCoupleInfo.brideEmail || editCoupleInfo.groomEmail) && (
+                    <div className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
+                      <Mail className="w-4 h-4 mr-2" />
+                      {editCoupleInfo.brideEmail || editCoupleInfo.groomEmail}
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -7812,44 +7816,50 @@ ${invoiceForm.items
               <div className="space-y-4 text-sm">
                 <div>
                   <p className="font-semibold text-gray-900">
-                    {editWeddingDetails.venueName}
+                    {editWeddingDetails.venueName || "Venue TBD"}
                   </p>
-                  <p className="text-gray-600">
-                    {editWeddingDetails.venueAddress}
-                  </p>
+                  {editWeddingDetails.venueAddress && (
+                    <p className="text-gray-600">
+                      {editWeddingDetails.venueAddress}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">
-                    {new Date(
-                      editWeddingDetails.weddingDate
-                    ).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {editWeddingDetails.weddingDate
+                      ? new Date(editWeddingDetails.weddingDate).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : "Date TBD"}
                   </p>
-                  <p className="text-gray-600">
-                    {new Date(
-                      `2024-01-01 ${editWeddingDetails.startTime}`
-                    ).toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}{" "}
-                    -{" "}
-                    {new Date(
-                      `2024-01-01 ${editWeddingDetails.endTime}`
-                    ).toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
-                  </p>
+                  {(editWeddingDetails.startTime || editWeddingDetails.endTime) && (
+                    <p className="text-gray-600">
+                      {editWeddingDetails.startTime
+                        ? new Date(`2024-01-01 ${editWeddingDetails.startTime}`).toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })
+                        : "TBD"}
+                      {editWeddingDetails.endTime && (
+                        <>
+                          {" - "}
+                          {new Date(`2024-01-01 ${editWeddingDetails.endTime}`).toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">Expected Guests</p>
                   <p className="text-gray-600">
-                    {editWeddingDetails.expectedGuests} people
+                    {editWeddingDetails.expectedGuests ? `${editWeddingDetails.expectedGuests} people` : "TBD"}
                   </p>
                 </div>
                 {editWeddingDetails.officiantNotes && (
@@ -7863,15 +7873,21 @@ ${invoiceForm.items
                     </p>
                   </div>
                 )}
-                <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 w-fit shadow-md">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {Math.ceil(
-                    (new Date(editWeddingDetails.weddingDate).getTime() -
-                      new Date().getTime()) /
-                    (1000 * 60 * 60 * 24)
-                  )}{" "}
-                  days until wedding
-                </Badge>
+                {editWeddingDetails.weddingDate && (
+                  <Badge className={`${
+                    Math.ceil((new Date(editWeddingDetails.weddingDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) < 0
+                      ? "bg-gradient-to-r from-gray-500 to-gray-600"
+                      : "bg-gradient-to-r from-blue-500 to-blue-600"
+                  } text-white border-0 w-fit shadow-md`}>
+                    <Clock className="w-3 h-3 mr-1" />
+                    {Math.ceil(
+                      (new Date(editWeddingDetails.weddingDate).getTime() -
+                        new Date().getTime()) /
+                      (1000 * 60 * 60 * 24)
+                    )}{" "}
+                    days until wedding
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>
