@@ -6870,10 +6870,10 @@ ${invoiceForm.items
                                                 "bg-pink-500"
                                                 } text-white`}
                                             >
-                                              {couple.brideName
+                                              {(couple.brideName || "")
                                                 .split(" ")
                                                 .map((n) => n[0])
-                                                .join("")}
+                                                .join("") || "B"}
                                             </AvatarFallback>
                                           </Avatar>
                                           <div>
@@ -6914,10 +6914,10 @@ ${invoiceForm.items
                                                 "bg-blue-500"
                                                 } text-white`}
                                             >
-                                              {couple.groomName
+                                              {(couple.groomName || "")
                                                 .split(" ")
                                                 .map((n) => n[0])
-                                                .join("")}
+                                                .join("") || "G"}
                                             </AvatarFallback>
                                           </Avatar>
                                           <div>
@@ -7634,10 +7634,10 @@ ${invoiceForm.items
                         "bg-pink-500"
                         } text-white`}
                     >
-                      {editCoupleInfo.brideName
+                      {(editCoupleInfo.brideName || "")
                         .split(" ")
                         .map((n) => n[0])
-                        .join("")}
+                        .join("") || "B"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -7675,10 +7675,10 @@ ${invoiceForm.items
                         "bg-blue-500"
                         } text-white`}
                     >
-                      {editCoupleInfo.groomName
+                      {(editCoupleInfo.groomName || "")
                         .split(" ")
                         .map((n) => n[0])
-                        .join("")}
+                        .join("") || "G"}
                     </AvatarFallback>
                   </Avatar>
                   <div>

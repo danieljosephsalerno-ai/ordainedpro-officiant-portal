@@ -321,9 +321,8 @@ export function OfficiantDashboardDialog({
       const transformedCeremonies: Ceremony[] = couples.map((couple) => {
         const getInitials = (name: string) =>
           name
-            .split(" ")
-            .map((n) => n[0])
-            .join("");
+            ? name.split(" ").map((n) => n[0]).join("")
+            : "";
 
         const weddingDate = couple.weddingDetails?.weddingDate
           ? new Date(couple.weddingDetails.weddingDate).toLocaleDateString(
@@ -1202,8 +1201,8 @@ export function OfficiantDashboardDialog({
                               <div>
                                 <div className="flex items-center space-x-2">
                                   <p className="font-semibold text-gray-900">
-                                    {ceremony.couple1Name.split(" ")[0]} &{" "}
-                                    {ceremony.couple2Name.split(" ")[0]}
+                                    {(ceremony.couple1Name || "").split(" ")[0] || "Bride"} &{" "}
+                                    {(ceremony.couple2Name || "").split(" ")[0] || "Groom"}
                                   </p>
                                   <Badge
                                     className={
@@ -1445,8 +1444,8 @@ export function OfficiantDashboardDialog({
                               </Avatar>
                             </div>
                             <p className="text-sm font-semibold text-gray-900">
-                              {ceremony.couple1Name.split(" ")[0]} &{" "}
-                              {ceremony.couple2Name.split(" ")[0]}
+                              {(ceremony.couple1Name || "").split(" ")[0] || "Bride"} &{" "}
+                              {(ceremony.couple2Name || "").split(" ")[0] || "Groom"}
                             </p>
                             <p className="text-xs text-gray-600 flex items-center mt-1">
                               <Clock className="w-3 h-3 mr-1" />

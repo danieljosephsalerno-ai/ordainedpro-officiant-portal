@@ -7,7 +7,20 @@
 - ✅ Outbound emails working (sending via Resend)
 - ✅ Inbound email webhook FIXED (now fetches content from Resend API)
 - ✅ Auto-refresh for messages (real-time + 30s polling fallback)
-- ⚠️ Need to deploy changes to portal.ordainedpro.com
+- ✅ **FIXED: Add Ceremony crash** (onAddCeremony callback now properly called)
+- ✅ **Code synced to GitHub** - Netlify deploys automatically from `main` branch
+
+## Deployment Status
+- **GitHub Repo:** danieljosephsalerno-ai/ordainedpro-officiant-portal
+- **Netlify:** Connected to GitHub - deploys automatically on push to `main`
+- **Live Site:** portal.ordainedpro.com
+
+### Latest Commit on main:
+- `5ca5bab` - Fix: Add null checks for brideName/groomName.split() calls
+
+## To Check Deployment:
+1. Visit https://portal.ordainedpro.com
+2. Or check Netlify dashboard for build status
 
 ## Message Auto-Refresh Features
 - ✅ Real-time subscription to messages table (Supabase)
@@ -22,13 +35,6 @@
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 ```
 
-## To Enable Email Replies from Couples
-
-1. **Go to Resend Dashboard** → https://resend.com/domains
-2. Webhook is already configured at: `https://portal.ordainedpro.com/api/inbound-email`
-3. ✅ Webhook is receiving events (Success status)
-4. ⚠️ Need to deploy updated code to fix empty content issue
-
 ## Completed Tasks
 - [x] Fixed login/session persistence issues
 - [x] Updated header avatar to use profile photo
@@ -40,13 +46,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 - [x] Fixed inbound email to fetch content from Resend API
 - [x] Added message polling fallback (30s)
 - [x] Added new message indicator
+- [x] **Fixed Add Ceremony crash (v371)**
+- [x] **Synced code to GitHub repo**
 
-## Pending - Deployment Needed
-- [ ] **Deploy updated inbound-email handler to portal.ordainedpro.com**
+## Remaining Tasks
 - [ ] Enable realtime on messages table in Supabase
 - [ ] Test email reply flow end-to-end
 
 ## Notes
-- The Netlify build log shows successful compilation
-- TypeScript errors are type annotation warnings (don't break build)
-- The critical fix is running the SQL to add couple_id column
+- Netlify is connected to GitHub repo - no need for Same.new deploy
+- Push to `main` branch triggers automatic Netlify deployment
+- TypeScript errors are type annotation warnings (don't break build - CI=false)
