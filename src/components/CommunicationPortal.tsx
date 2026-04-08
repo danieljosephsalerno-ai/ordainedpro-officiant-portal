@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import confetti from 'canvas-confetti'
 import mammoth from 'mammoth'
+import { supabase } from "@/supabase/utils/client"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -549,6 +550,79 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
   const [showSwitchCeremonyDialog, setShowSwitchCeremonyDialog] = useState(false)
   const [showArchivedCeremoniesDialog, setShowArchivedCeremoniesDialog] = useState(false)
   const [showDashboardDialog, setShowDashboardDialog] = useState(false)
+  const [couplesLoading, setCouplesLoading] = useState(true)
+
+  // Fetch couples from Supabase on mount
+  useEffect(() => {
+    const fetchCouplesFromSupabase = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setCouplesLoading(false)
+          return
+        }
+
+        const { data: couples, error } = await supabase
+          .from("couples")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("Error fetching couples:", error)
+          setCouplesLoading(false)
+          return
+        }
+
+        if (couples && couples.length > 0) {
+          // Transform Supabase couples to match expected format
+          const transformedCouples = couples.map((couple: any, index: number) => ({
+            id: couple.id,
+            brideName: couple.bride_name || "Bride",
+            brideEmail: couple.bride_email || "",
+            bridePhone: couple.bride_phone || "",
+            brideAddress: couple.bride_address || "",
+            groomName: couple.groom_name || "Groom",
+            groomEmail: couple.groom_email || "",
+            groomPhone: couple.groom_phone || "",
+            groomAddress: couple.groom_address || "",
+            address: couple.address || "",
+            emergencyContact: couple.emergency_contact || "",
+            specialRequests: couple.special_requests || "",
+            isActive: couple.is_active !== false,
+            colors: getCoupleColors(index + 1),
+            weddingDetails: {
+              venueName: couple.venue_name || "",
+              venueAddress: couple.venue_address || "",
+              weddingDate: couple.wedding_date || "",
+              startTime: couple.start_time || "",
+              endTime: couple.end_time || "",
+              expectedGuests: couple.expected_guests || "",
+              officiantNotes: couple.officiant_notes || ""
+            },
+            paymentInfo: {
+              totalAmount: couple.total_amount || 0,
+              depositPaid: couple.deposit_paid || 0,
+              balance: (couple.total_amount || 0) - (couple.deposit_paid || 0),
+              depositDate: couple.deposit_date || "",
+              finalPaymentDue: couple.final_payment_due || "",
+              paymentStatus: couple.payment_status || "pending"
+            },
+            paymentHistory: []
+          }))
+
+          setAllCouples(transformedCouples)
+          console.log("✅ Loaded", transformedCouples.length, "couples from Supabase")
+        }
+      } catch (err) {
+        console.error("Error:", err)
+      } finally {
+        setCouplesLoading(false)
+      }
+    }
+
+    fetchCouplesFromSupabase()
+  }, [])
 
   // Form states for Add New Ceremony
   const [newCeremony, setNewCeremony] = useState({
@@ -587,8 +661,8 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     }
   })
 
-  // Get current couple identifier
-  const currentCoupleId = `${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}`
+  // Get current couple display name
+  const currentCoupleName = `${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}`
 
   // Form states for Edit Wedding Details - loads from saved data
   const [editWeddingDetails, setEditWeddingDetails] = useState(
@@ -697,33 +771,108 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     files: []
   })
 
-  // Mock data for existing features
-  const messages = [
-    {
-      id: 1,
-      sender: "Sarah Johnson",
-      role: "bride",
-      message: "Hi Pastor Michael! We're so excited to work with you. Could we schedule a time to discuss our ceremony preferences?",
-      timestamp: "2 hours ago",
-      avatar: "/api/placeholder/40/40"
-    },
-    {
-      id: 2,
-      sender: "Pastor Michael",
-      role: "officiant",
-      message: "Congratulations on your engagement! I'd be delighted to help make your special day meaningful. I have availability this Thursday at 2 PM or Friday at 10 AM. Which works better for you?",
-      timestamp: "1 hour ago",
-      avatar: "/api/placeholder/40/40"
-    },
-    {
-      id: 3,
-      sender: "David Chen",
-      role: "groom",
-      message: "Thursday at 2 PM works perfectly for both of us. Should we meet at your office or would you prefer a video call?",
-      timestamp: "30 minutes ago",
-      avatar: "/api/placeholder/40/40"
+  // Messages state - fetched from Supabase
+  const [messages, setMessages] = useState<any[]>([])
+  const [loadingMessages, setLoadingMessages] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+
+  // Fetch current user on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
     }
-  ]
+    getUser()
+  }, [])
+
+  // Get current couple ID
+  const activeCoupleDbId = allCouples[activeCoupleIndex]?.id
+
+  // Fetch messages for the active couple
+  const fetchMessages = useCallback(async () => {
+    if (!currentUser?.id || !activeCoupleDbId) return
+
+    setLoadingMessages(true)
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("couple_id", activeCoupleDbId)
+        .order("created_at", { ascending: true })
+
+      if (error) {
+        console.error("Error fetching messages:", error)
+        return
+      }
+
+      // Transform to display format
+      const formattedMessages = (data || []).map((m: any) => ({
+        id: m.id,
+        sender: m.sender === "officiant" ? (officiantProfile?.fullName || "Pastor Michael") : m.sender_name,
+        role: m.sender,
+        message: m.content,
+        timestamp: formatMessageTime(m.created_at),
+        avatar: "/api/placeholder/40/40",
+        read: m.read
+      }))
+
+      setMessages(formattedMessages)
+    } catch (err) {
+      console.error("Error:", err)
+    } finally {
+      setLoadingMessages(false)
+    }
+  }, [currentUser?.id, activeCoupleDbId, officiantProfile?.fullName])
+
+  // Format message timestamp
+  const formatMessageTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins} minutes ago`
+    if (diffHours < 24) return `${diffHours} hours ago`
+    if (diffDays < 7) return `${diffDays} days ago`
+    return date.toLocaleDateString()
+  }
+
+  // Fetch messages when couple changes
+  useEffect(() => {
+    if (currentUser?.id && activeCoupleDbId) {
+      fetchMessages()
+    }
+  }, [currentUser?.id, activeCoupleDbId, fetchMessages])
+
+  // Real-time subscription for messages
+  useEffect(() => {
+    if (!currentUser?.id || !activeCoupleDbId) return
+
+    const channel = supabase
+      .channel(`messages-${activeCoupleDbId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `couple_id=eq.${activeCoupleDbId}`,
+        },
+        () => {
+          console.log("📨 New message received")
+          fetchMessages()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentUser?.id, activeCoupleDbId, fetchMessages])
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -3465,38 +3614,91 @@ Note: This is an initial draft. Further development needed to incorporate specif
     return '📁'
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() && messageAttachments.length === 0) {
       return
     }
 
-    // Create new message with attachments
-    const message = {
-      id: messages.length + 1,
-      sender: "Pastor Michael",
-      role: "officiant",
-      message: newMessage || "(File attachments)",
-      timestamp: "Just now",
-      avatar: "/api/placeholder/40/40",
-      attachments: messageAttachments.map(file => ({
-        id: file.id,
-        name: file.name,
-        size: formatFileSize(file.size),
-        type: file.type,
-        url: file.url
-      }))
+    if (!currentUser?.id || !activeCoupleDbId) {
+      alert("Please select a couple first")
+      return
     }
 
-    // In a real app, send message to backend here
-    console.log("Sending message with attachments:", message)
+    try {
+      // Create message in Supabase
+      const messageData = {
+        user_id: currentUser.id,
+        couple_id: activeCoupleDbId,
+        sender: "officiant",
+        sender_name: officiantProfile?.fullName || "Pastor Michael",
+        content: newMessage.trim() || "(File attachments)",
+        read: true,
+        attachments: messageAttachments.length > 0 ? messageAttachments.map(file => ({
+          id: file.id,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: file.url
+        })) : null,
+        created_at: new Date().toISOString(),
+      }
 
-    // Clear message and attachments
-    setNewMessage("")
-    setMessageAttachments([])
-    setShowAttachments(false)
+      const { data, error } = await supabase
+        .from("messages")
+        .insert(messageData)
+        .select()
+        .single()
 
-    // Show success message
-    alert("Message sent successfully!")
+      if (error) {
+        console.error("Error sending message:", error)
+        alert("Failed to send message. Please try again.")
+        return
+      }
+
+      console.log("✅ Message sent:", data)
+
+      // Add to local state immediately for instant feedback
+      const newMsg = {
+        id: data.id,
+        sender: officiantProfile?.fullName || "Pastor Michael",
+        role: "officiant",
+        message: messageData.content,
+        timestamp: "Just now",
+        avatar: "/api/placeholder/40/40"
+      }
+      setMessages(prev => [...prev, newMsg])
+
+      // Clear message and attachments
+      setNewMessage("")
+      setMessageAttachments([])
+      setShowAttachments(false)
+
+      // Also send email notification to couple
+      try {
+        const activeCouple = allCouples[activeCoupleIndex]
+        if (activeCouple?.brideEmail || activeCouple?.groomEmail) {
+          const recipients = [activeCouple.brideEmail, activeCouple.groomEmail].filter(Boolean)
+
+          await fetch("/api/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: recipients,
+              subject: `New message from ${officiantProfile?.fullName || "Your Officiant"}`,
+              body: newMessage.trim(),
+              coupleId: activeCoupleDbId,
+              officiantId: currentUser.id,
+            }),
+          })
+        }
+      } catch (emailError) {
+        console.log("Email notification skipped:", emailError)
+      }
+
+    } catch (err) {
+      console.error("Error:", err)
+      alert("An error occurred. Please try again.")
+    }
   }
 
   // Handle opening invoice generation dialog
@@ -4140,7 +4342,7 @@ ${invoiceContent}`)
                                   <div className="flex items-center space-x-2">
                                     <Avatar className={`ring-2 ${couple.colors?.brideRing || 'ring-pink-100'}`}>
                                       <AvatarFallback className={`${couple.colors?.bride || 'bg-pink-500'} text-white`}>
-                                        {couple.brideName.split(' ').map(n => n[0]).join('')}
+                                        {couple.brideName.split(' ').map((n: string) => n[0]).join('')}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -4165,7 +4367,7 @@ ${invoiceContent}`)
                                   <div className="flex items-center space-x-2">
                                     <Avatar className={`ring-2 ${couple.colors?.groomRing || 'ring-blue-100'}`}>
                                       <AvatarFallback className={`${couple.colors?.groom || 'bg-blue-500'} text-white`}>
-                                        {couple.groomName.split(' ').map(n => n[0]).join('')}
+                                        {couple.groomName.split(' ').map((n: string) => n[0]).join('')}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -4304,7 +4506,7 @@ ${invoiceContent}`)
                                   <div className="flex items-center space-x-2">
                                     <Avatar className={`ring-2 ${couple.colors?.brideRing || 'ring-pink-100'}`}>
                                       <AvatarFallback className={`${couple.colors?.bride || 'bg-pink-500'} text-white`}>
-                                        {couple.brideName.split(' ').map(n => n[0]).join('')}
+                                        {couple.brideName.split(' ').map((n: string) => n[0]).join('')}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -4329,7 +4531,7 @@ ${invoiceContent}`)
                                   <div className="flex items-center space-x-2">
                                     <Avatar className={`ring-2 ${couple.colors?.groomRing || 'ring-blue-100'}`}>
                                       <AvatarFallback className={`${couple.colors?.groom || 'bg-blue-500'} text-white`}>
-                                        {couple.groomName.split(' ').map(n => n[0]).join('')}
+                                        {couple.groomName.split(' ').map((n: string) => n[0]).join('')}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -4670,7 +4872,7 @@ ${invoiceContent}`)
                   <Avatar className={`ring-2 ${allCouples[activeCoupleIndex]?.colors?.brideRing || 'ring-pink-100'}`}>
                     <AvatarImage src="/api/placeholder/40/40" />
                     <AvatarFallback className={`${allCouples[activeCoupleIndex]?.colors?.bride || 'bg-pink-500'} text-white`}>
-                      {editCoupleInfo.brideName.split(' ').map(n => n[0]).join('')}
+                      {editCoupleInfo.brideName.split(' ').map((n: string) => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -4688,7 +4890,7 @@ ${invoiceContent}`)
                   <Avatar className={`ring-2 ${allCouples[activeCoupleIndex]?.colors?.groomRing || 'ring-blue-100'}`}>
                     <AvatarImage src="/api/placeholder/40/40" />
                     <AvatarFallback className={`${allCouples[activeCoupleIndex]?.colors?.groom || 'bg-blue-500'} text-white`}>
-                      {editCoupleInfo.groomName.split(' ').map(n => n[0]).join('')}
+                      {editCoupleInfo.groomName.split(' ').map((n: string) => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -4889,7 +5091,7 @@ ${invoiceContent}`)
                           {message.role !== 'officiant' && (
                             <Avatar className="ring-2 ring-blue-100">
                               <AvatarImage src={message.avatar} />
-                              <AvatarFallback className="bg-blue-500 text-white">{message.sender.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              <AvatarFallback className="bg-blue-500 text-white">{message.sender.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                             </Avatar>
                           )}
                           <div className={`flex-1 max-w-xs lg:max-w-md ${message.role === 'officiant' ? 'order-first' : ''}`}>
@@ -4909,7 +5111,7 @@ ${invoiceContent}`)
                           {message.role === 'officiant' && (
                             <Avatar className="ring-2 ring-blue-100">
                               <AvatarImage src={message.avatar} />
-                              <AvatarFallback className="bg-blue-500 text-white">{message.sender.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              <AvatarFallback className="bg-blue-500 text-white">{message.sender.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                             </Avatar>
                           )}
                         </div>
