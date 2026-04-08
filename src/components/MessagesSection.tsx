@@ -288,8 +288,34 @@ export function MessagesSection() {
       setNewMessage("");
       scrollToBottom();
 
-      // Optionally send email notification to couple
-      // await sendEmailNotification(selectedCouple, newMessage.trim());
+      // Send email notification to couple
+      try {
+        const recipientEmail = selectedCouple.bride_email || selectedCouple.groom_email;
+        if (recipientEmail) {
+          const emailResponse = await fetch("/api/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: recipientEmail,
+              subject: "New message from your Wedding Officiant",
+              message: messageData.content,
+              fromName: messageData.sender_name,
+              coupleName: `${selectedCouple.bride_name} & ${selectedCouple.groom_name}`,
+              coupleId: selectedCoupleId,
+              officiantId: user.id,
+            }),
+          });
+          
+          if (emailResponse.ok) {
+            console.log("✅ Email notification sent to:", recipientEmail);
+          } else {
+            console.warn("⚠️ Email send failed:", await emailResponse.text());
+          }
+        }
+      } catch (emailError) {
+        console.warn("Email notification skipped:", emailError);
+        // Don't block message sending if email fails
+      }
 
     } catch (err) {
       console.error("Error:", err);

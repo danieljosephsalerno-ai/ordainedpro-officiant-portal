@@ -24,6 +24,17 @@ export async function POST(request: NextRequest) {
     // Check for Resend API key
     const resendApiKey = process.env.RESEND_API_KEY;
 
+    // Normalize 'to' to always be an array
+    const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
+
+    console.log("📧 Preparing to send email:", {
+      to: recipients,
+      subject,
+      fromName,
+      coupleName,
+      hasApiKey: !!resendApiKey,
+    });
+
     if (resendApiKey) {
       // Use Resend for email delivery
       const response = await fetch("https://api.resend.com/emails", {
@@ -39,7 +50,7 @@ export async function POST(request: NextRequest) {
           reply_to: coupleId && officiantId
             ? `reply+${coupleId}_${officiantId}@ziloesteo.resend.app`
             : "reply@ziloesteo.resend.app",
-          to: [to],
+          to: recipients,
           subject: subject,
           html: generateEmailHtml(fromName, coupleName, message, subject),
           text: message,
