@@ -13,30 +13,22 @@
 - ✅ **Console warnings cleaned up** - Removed verbose logging and fixed DialogDescription
 - ✅ **FIXED: Middleware Supabase error** (v382) - Added robust validation and try-catch
 - ✅ **Git connection established** - Same.new ↔ GitHub ↔ Netlify
-- ✅ **DATA ISOLATION FIXED** - All data now properly separated by couple_id
-- ✅ **TypeScript errors fixed** (v387) - All 32 errors resolved
-- ✅ **Realtime enabled** (v387) - messages, tasks, payments tables
+- ✅ **DATA ISOLATION FIXES** - Fixed hardcoded couple_id issues (see below)
 
-## Realtime Enabled Tables (v387)
-| Table | Realtime | Use Case |
-|-------|----------|----------|
-| `messages` | ✅ Enabled | Real-time message updates between officiant and couples |
-| `tasks` | ✅ Enabled | Real-time task completion tracking |
-| `payments` | ✅ Enabled | Payment status notifications |
+## Data Isolation Fixes (Completed)
+Fixed cross-couple data pollution within the same officiant's account:
 
-## Data Isolation Status (v386 - COMPLETE ✅)
+| Component | Issue Fixed |
+|-----------|-------------|
+| `AddTaskDialog.tsx` | Removed hardcoded `coupleId = 1`, now uses prop or localStorage |
+| `ContractUploadDialog.tsx` | Removed hardcoded `coupleId = 1`, now uses prop or localStorage |
+| `ScheduleMeetingDialog.tsx` | Removed hardcoded `coupleId = 1`, now uses prop or localStorage |
+| `CalendarSection.tsx` | Removed `couple_id: null`, now reads from localStorage |
 
-| System | Status | Fix Applied |
-|--------|--------|-------------|
-| Messages | ✅ FIXED | MessagesSection with couple selector, filters by `couple_id` |
-| Payments | ✅ FIXED | PaymentsSection with couple selector, filters by `couple_id` |
-| Wedding Events | ✅ FIXED | CalendarSection filters by `couple_id` when couple selected |
-| Tasks | ✅ FIXED | TasksSection + AddTaskDialog now accept `coupleId` prop |
+**New utility module:** `src/lib/couple-utils.ts` - Centralized couple ID management
 
-**All data isolation issues resolved!** Each system now:
-- Has a couple selector dropdown
-- Filters data by both `user_id` AND `couple_id`
-- Clears old data immediately when switching couples (prevents data leak)
+**Note:** All components now validate that a couple is selected before creating records.
+If no couple is selected, user sees: "⚠️ Please select a couple before..."
 
 ## Standalone Sections (Completed)
 Extracted from CommunicationPortal into their own pages:
@@ -48,13 +40,13 @@ Extracted from CommunicationPortal into their own pages:
 | Payments | ✅ DONE | `/payments` | `PaymentsSection.tsx` |
 | BuildScript (Mr. Script) | ✅ DONE | `/buildscript` | `BuildScriptSection.tsx` |
 | Marketplace | ✅ DONE | `/marketplace` | `MarketplaceSection.tsx` |
-| Messages | ✅ NEW | `/messages` | `MessagesSection.tsx` |
-| Tasks | ✅ NEW | `/tasks` | `TasksSection.tsx` |
 
 ## Deployment Status
 - **GitHub Repo:** danieljosephsalerno-ai/ordainedpro-officiant-portal
 - **Netlify:** Connected to GitHub - deploys automatically on push to `main`
 - **Live Site:** portal.ordainedpro.com
+
+## ⏸️ PAUSED - Tasks on hold per user request
 
 ## Completed Tasks
 - [x] Fixed login/session persistence issues
@@ -76,29 +68,17 @@ Extracted from CommunicationPortal into their own pages:
 - [x] Created Payments standalone page
 - [x] Created BuildScript standalone page
 - [x] Created Marketplace standalone page
-- [x] **DATA ISOLATION: Fixed Messages (v384)** - Created MessagesSection with couple selector
-- [x] **DATA ISOLATION: Fixed Payments (v384)** - Added couple_id filtering
-- [x] **DATA ISOLATION: Fixed Wedding Events (v385)** - CalendarSection filters by couple
-- [x] **DATA ISOLATION: Fixed Tasks (v385)** - Created TasksSection + updated AddTaskDialog
-- [x] **Fixed all 32 TypeScript errors (v387)** - Clean compile
-- [x] **Enabled Realtime on messages, tasks, payments (v387)**
+- [x] **Fixed data isolation - removed hardcoded couple_id values**
+- [x] **Created couple-utils.ts for centralized couple ID management**
 
-## Remaining Tasks (Optional/Future)
-- [ ] Apply RLS policies to Supabase (`.same/RLS-POLICIES.sql`) - **Recommended for database-level protection**
+## Remaining Tasks (Paused)
+- [ ] Enable realtime on messages table in Supabase
 - [ ] Test email reply flow end-to-end
+- [ ] Fix TypeScript type annotations (non-breaking)
 - [ ] Deploy marketplace and test integration
-
-## How to Apply RLS Policies
-1. Go to Supabase Dashboard → SQL Editor
-2. Open `.same/RLS-POLICIES.sql` 
-3. Copy and paste the entire contents
-4. Click "Run" to execute
-5. Verify with the query at the bottom of the file
 
 ## Notes
 - Netlify is connected to GitHub repo - no need for Same.new deploy
 - Push to `main` branch triggers automatic Netlify deployment
-- All 7 standalone section pages have been created and are functional
-- **Data isolation is now complete at the application level**
-- **RLS policies should still be applied for database-level protection**
-- **Realtime is now enabled for messages, tasks, and payments tables**
+- All 5 standalone section pages have been created and are functional
+- **Data isolation is now enforced at application level for couple-specific data**
