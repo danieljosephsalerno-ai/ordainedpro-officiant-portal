@@ -362,21 +362,17 @@ export async function deleteScript(id: number): Promise<void> {
 }
 
 // ===== SUBSCRIPTION API =====
-
 export async function getSubscription(userId: string): Promise<Subscription | null> {
   if (!isSupabaseConfigured()) return null
-
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', userId)
     .single()
-
   if (error && error.code !== 'PGRST116') {
     console.error('Error fetching subscription:', error)
     throw error
   }
-
   return data
 }
 
