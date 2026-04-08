@@ -85,7 +85,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     try {
       const { getSubscription } = await import('@/services/supabase-api')
-      const { isSupabaseConfigured } = await import('@/lib/supabase')
+      const { isSupabaseConfigured, supabase } = await import('@/lib/supabase')
 
       if (!isSupabaseConfigured()) {
         // Supabase not configured - using default subscription
@@ -94,8 +94,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // For now, using a mock user ID - replace with actual auth user ID later
-      const userId = 'mock-user-id'
+      // Get the actual authenticated user ID
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        console.log('ℹ️ No authenticated user, using default Aspirant subscription')
+        setSubscription(defaultSubscription)
+        setIsLoading(false)
+        return
+      }
+
+      const userId = user.id
       const data = await getSubscription(userId)
 
       if (!data) {
