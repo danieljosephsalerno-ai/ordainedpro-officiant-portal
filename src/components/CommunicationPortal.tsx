@@ -3362,10 +3362,15 @@ Note: This is an initial draft. Further development needed to incorporate specif
       }
 
       // 2. Send email via API
+      let emailsSent = 0
+      let emailErrors: string[] = []
+
       for (const email of recipientEmails) {
         if (!email) continue
 
         try {
+          console.log(`📧 Attempting to send email to: ${email}`)
+
           const response = await fetch("/api/send-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -3381,14 +3386,19 @@ Note: This is an initial draft. Further development needed to incorporate specif
           })
 
           const result = await response.json()
+          console.log(`📧 API Response for ${email}:`, result)
 
-          if (response.ok) {
+          if (response.ok && result.success) {
             console.log(`✅ Email sent to ${email}:`, result)
+            emailsSent++
           } else {
+            const errorMsg = result.error || result.details || "Unknown error"
             console.error(`❌ Failed to send email to ${email}:`, result)
+            emailErrors.push(`${email}: ${errorMsg}`)
           }
         } catch (emailError) {
           console.error(`❌ Error sending email to ${email}:`, emailError)
+          emailErrors.push(`${email}: Network error`)
         }
       }
 
@@ -3397,8 +3407,18 @@ Note: This is an initial draft. Further development needed to incorporate specif
       setMessageAttachments([])
       setShowAttachments(false)
 
-      // Show success message
-      alert("Message sent successfully!")
+      // Show detailed result
+      if (emailsSent > 0 && emailErrors.length === 0) {
+        alert(`✅ Message sent successfully!\n\nEmails sent to: ${recipientEmails.join(", ")}`)
+      } else if (emailsSent > 0 && emailErrors.length > 0) {
+        alert(`⚠️ Message sent with some issues:\n\n✅ Sent: ${emailsSent}\n❌ Failed:\n${emailErrors.join("\n")}`)
+      } else if (emailErrors.length > 0) {
+        alert(`❌ Failed to send emails:\n\n${emailErrors.join("\n")}\n\nMessage was saved but emails not delivered.`)
+      } else if (recipientEmails.length === 0) {
+        alert(`⚠️ Message saved but no email addresses found for this couple.\n\nPlease add email addresses in the couple's profile.`)
+      } else {
+        alert("Message saved!")
+      }
 
     } catch (error) {
       console.error("❌ Error in handleSendMessage:", error)

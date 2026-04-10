@@ -9,14 +9,15 @@
 - ✅ Auto-refresh for messages (real-time + 30s polling fallback)
 - ✅ **FIXED: Add Ceremony crash** (onAddCeremony callback now properly called)
 - ✅ **Code synced to GitHub** - Netlify deploys automatically from `main` branch
-- ✅ **Latest push:** Apr 10, 2026 - Email functionality included
+- ✅ **FIXED: handleSendMessage now actually sends emails!** (was just showing alert before)
 
 ## Deployment Status
 - **GitHub Repo:** danieljosephsalerno-ai/ordainedpro-officiant-portal
 - **Netlify:** Connected to GitHub - deploys automatically on push to `main`
 - **Live Site:** portal.ordainedpro.com
 
-### Latest Commit on main:
+### Latest Commits on main:
+- `fc9a448` - Fix handleSendMessage to actually save to Supabase and send emails
 - `b576e30` - Add email functionality with inbound/outbound support
 
 ## To Check Deployment:
