@@ -9,7 +9,7 @@
 - ✅ Auto-refresh for messages (real-time + 30s polling fallback)
 - ✅ **FIXED: Add Ceremony crash** (onAddCeremony callback now properly called)
 - ✅ **Code synced to GitHub** - Netlify deploys automatically from `main` branch
-- ✅ **FIXED: CommunicationPortal restored from backup** (v390)
+- ✅ **Latest push:** Apr 10, 2026 - Email functionality included
 
 ## Deployment Status
 - **GitHub Repo:** danieljosephsalerno-ai/ordainedpro-officiant-portal
@@ -17,7 +17,7 @@
 - **Live Site:** portal.ordainedpro.com
 
 ### Latest Commit on main:
-- `5ca5bab` - Fix: Add null checks for brideName/groomName.split() calls
+- `b576e30` - Add email functionality with inbound/outbound support
 
 ## To Check Deployment:
 1. Visit https://portal.ordainedpro.com

@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import confetti from 'canvas-confetti'
 import mammoth from 'mammoth'
+import { supabase } from "@/supabase/utils/client"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -340,6 +341,12 @@ interface CommunicationPortalProps {
 }
 
 export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalProps = {}) {
+  // Auth and profile state
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [officiantProfile, setOfficiantProfile] = useState<any>(null)
+  const [messages, setMessages] = useState<any[]>([])
+  const [isSendingMessage, setIsSendingMessage] = useState(false)
+
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [newMessage, setNewMessage] = useState("")
   const [newTask, setNewTask] = useState("")
@@ -605,6 +612,38 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     }
   }, [savedCeremonies])
 
+  // Load current user and officiant profile
+  useEffect(() => {
+    const loadUserAndProfile = async () => {
+      try {
+        // Get current user session
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          console.log("No user session found")
+          return
+        }
+        console.log("✅ Loaded user:", user.id)
+        setCurrentUser(user)
+
+        // Load officiant profile
+        const { data: profile, error: profileError } = await supabase
+          .from("officiant_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single()
+
+        if (profile) {
+          console.log("✅ Loaded profile:", profile.business_name)
+          setOfficiantProfile(profile)
+        }
+      } catch (err) {
+        console.error("Error loading user/profile:", err)
+      }
+    }
+
+    loadUserAndProfile()
+  }, [])
+
 
 
   // Script Management States
@@ -633,8 +672,8 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     files: []
   })
 
-  // Mock data for existing features
-  const messages = [
+  // Mock messages for display (when no Supabase messages loaded)
+  const displayMessages = messages.length > 0 ? messages : [
     {
       id: 1,
       sender: "Sarah Johnson",
@@ -3263,38 +3302,110 @@ Note: This is an initial draft. Further development needed to incorporate specif
     return '📁'
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() && messageAttachments.length === 0) {
       return
     }
 
-    // Create new message with attachments
-    const message = {
-      id: messages.length + 1,
-      sender: "Pastor Michael",
-      role: "officiant",
-      message: newMessage || "(File attachments)",
-      timestamp: "Just now",
-      avatar: "/api/placeholder/40/40",
-      attachments: messageAttachments.map(file => ({
-        id: file.id,
-        name: file.name,
-        size: formatFileSize(file.size),
-        type: file.type,
-        url: file.url
-      }))
+    if (isSendingMessage) return
+    setIsSendingMessage(true)
+
+    try {
+      // Get officiant name from profile or user metadata
+      const officiantName = officiantProfile?.full_name ||
+                           currentUser?.user_metadata?.full_name ||
+                           "Wedding Officiant"
+
+      // Get couple info
+      const coupleId = editCoupleInfo.id
+      const coupleName = `${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}`
+      const brideEmail = editCoupleInfo.brideEmail
+      const groomEmail = editCoupleInfo.groomEmail
+
+      // Determine recipient emails
+      const recipientEmails = [brideEmail, groomEmail].filter(Boolean)
+
+      console.log("📧 Sending message to:", { coupleId, coupleName, recipientEmails, message: newMessage })
+
+      // 1. Save message to Supabase
+      if (currentUser) {
+        const messageData = {
+          user_id: currentUser.id,
+          couple_id: coupleId,
+          sender: "officiant",
+          sender_name: officiantName,
+          content: newMessage || "(File attachments)",
+          read: true, // Officiant's own message is read
+          created_at: new Date().toISOString(),
+        }
+
+        const { data: savedMessage, error: saveError } = await supabase
+          .from("messages")
+          .insert([messageData])
+          .select()
+
+        if (saveError) {
+          console.error("❌ Error saving message to Supabase:", saveError)
+        } else {
+          console.log("✅ Message saved to Supabase:", savedMessage)
+
+          // Add to local messages state
+          setMessages(prev => [...prev, {
+            id: savedMessage[0].id,
+            sender: officiantName,
+            role: "officiant",
+            message: newMessage,
+            timestamp: "Just now",
+            avatar: "/api/placeholder/40/40"
+          }])
+        }
+      }
+
+      // 2. Send email via API
+      for (const email of recipientEmails) {
+        if (!email) continue
+
+        try {
+          const response = await fetch("/api/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: email,
+              subject: `Message from ${officiantName} - Wedding Planning`,
+              message: newMessage,
+              fromName: officiantName,
+              coupleName: coupleName,
+              coupleId: coupleId,
+              officiantId: currentUser?.id
+            })
+          })
+
+          const result = await response.json()
+
+          if (response.ok) {
+            console.log(`✅ Email sent to ${email}:`, result)
+          } else {
+            console.error(`❌ Failed to send email to ${email}:`, result)
+          }
+        } catch (emailError) {
+          console.error(`❌ Error sending email to ${email}:`, emailError)
+        }
+      }
+
+      // Clear message and attachments
+      setNewMessage("")
+      setMessageAttachments([])
+      setShowAttachments(false)
+
+      // Show success message
+      alert("Message sent successfully!")
+
+    } catch (error) {
+      console.error("❌ Error in handleSendMessage:", error)
+      alert("Failed to send message. Please try again.")
+    } finally {
+      setIsSendingMessage(false)
     }
-
-    // In a real app, send message to backend here
-    console.log("Sending message with attachments:", message)
-
-    // Clear message and attachments
-    setNewMessage("")
-    setMessageAttachments([])
-    setShowAttachments(false)
-
-    // Show success message
-    alert("Message sent successfully!")
   }
 
   // Handle opening invoice generation dialog
