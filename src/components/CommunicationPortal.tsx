@@ -644,6 +644,69 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     loadUserAndProfile()
   }, [])
 
+  // Load messages from Supabase for the current couple
+  const loadMessages = useCallback(async () => {
+    if (!currentUser || !editCoupleInfo?.id) return
+
+    try {
+      console.log("📨 Loading messages for couple:", editCoupleInfo.id)
+
+      const { data: messagesData, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("couple_id", editCoupleInfo.id)
+        .order("created_at", { ascending: true })
+
+      if (error) {
+        console.error("❌ Error loading messages:", error)
+        return
+      }
+
+      if (messagesData && messagesData.length > 0) {
+        console.log("✅ Loaded", messagesData.length, "messages")
+
+        // Transform to display format
+        const formattedMessages = messagesData.map(msg => ({
+          id: msg.id,
+          sender: msg.sender_name || (msg.sender === "officiant" ? "Officiant" : "Couple"),
+          role: msg.sender,
+          message: msg.content,
+          timestamp: formatMessageTime(msg.created_at),
+          avatar: "/api/placeholder/40/40"
+        }))
+
+        setMessages(formattedMessages)
+      } else {
+        console.log("📭 No messages found for this couple")
+        setMessages([])
+      }
+    } catch (err) {
+      console.error("❌ Error in loadMessages:", err)
+    }
+  }, [currentUser, editCoupleInfo?.id])
+
+  // Helper to format message timestamps
+  const formatMessageTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    return date.toLocaleDateString()
+  }
+
+  // Load messages when user or couple changes
+  useEffect(() => {
+    loadMessages()
+  }, [loadMessages])
+
 
 
   // Script Management States
@@ -672,33 +735,8 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     files: []
   })
 
-  // Mock messages for display (when no Supabase messages loaded)
-  const displayMessages = messages.length > 0 ? messages : [
-    {
-      id: 1,
-      sender: "Sarah Johnson",
-      role: "bride",
-      message: "Hi Pastor Michael! We're so excited to work with you. Could we schedule a time to discuss our ceremony preferences?",
-      timestamp: "2 hours ago",
-      avatar: "/api/placeholder/40/40"
-    },
-    {
-      id: 2,
-      sender: "Pastor Michael",
-      role: "officiant",
-      message: "Congratulations on your engagement! I'd be delighted to help make your special day meaningful. I have availability this Thursday at 2 PM or Friday at 10 AM. Which works better for you?",
-      timestamp: "1 hour ago",
-      avatar: "/api/placeholder/40/40"
-    },
-    {
-      id: 3,
-      sender: "David Chen",
-      role: "groom",
-      message: "Thursday at 2 PM works perfectly for both of us. Should we meet at your office or would you prefer a video call?",
-      timestamp: "30 minutes ago",
-      avatar: "/api/placeholder/40/40"
-    }
-  ]
+  // Display messages from Supabase (or empty state)
+  const displayMessages = messages
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -4728,36 +4766,44 @@ ${invoiceContent}`)
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="space-y-4 max-h-96 overflow-y-auto mb-6">
-                      {messages.map((message) => (
-                        <div key={message.id} className={`flex space-x-3 ${message.role === 'officiant' ? 'justify-end' : ''}`}>
-                          {message.role !== 'officiant' && (
-                            <Avatar className="ring-2 ring-blue-100">
-                              <AvatarImage src={message.avatar} />
-                              <AvatarFallback className="bg-blue-500 text-white">{message.sender.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                          )}
-                          <div className={`flex-1 max-w-xs lg:max-w-md ${message.role === 'officiant' ? 'order-first' : ''}`}>
-                            <div className={`p-4 rounded-xl shadow-sm ${
-                              message.role === 'officiant'
-                                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white ml-auto'
-                                : 'bg-white border border-gray-200 text-gray-900'
-                            }`}>
-                              <p className="text-sm leading-relaxed">{message.message}</p>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2 flex items-center">
-                              <span className="font-medium">{message.sender}</span>
-                              <span className="mx-1">•</span>
-                              <span>{message.timestamp}</span>
-                            </p>
-                          </div>
-                          {message.role === 'officiant' && (
-                            <Avatar className="ring-2 ring-blue-100">
-                              <AvatarImage src={message.avatar} />
-                              <AvatarFallback className="bg-blue-500 text-white">{message.sender.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                          )}
+                      {messages.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                          <p className="font-medium">No messages yet</p>
+                          <p className="text-sm mt-1">Send a message to start the conversation with {editCoupleInfo?.brideName} & {editCoupleInfo?.groomName}</p>
                         </div>
-                      ))}
+                      ) : (
+                        messages.map((message) => (
+                          <div key={message.id} className={`flex space-x-3 ${message.role === 'officiant' ? 'justify-end' : ''}`}>
+                            {message.role !== 'officiant' && (
+                              <Avatar className="ring-2 ring-blue-100">
+                                <AvatarImage src={message.avatar} />
+                                <AvatarFallback className="bg-blue-500 text-white">{message.sender?.split(' ').map((n: string) => n[0]).join('') || '?'}</AvatarFallback>
+                              </Avatar>
+                            )}
+                            <div className={`flex-1 max-w-xs lg:max-w-md ${message.role === 'officiant' ? 'order-first' : ''}`}>
+                              <div className={`p-4 rounded-xl shadow-sm ${
+                                message.role === 'officiant'
+                                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white ml-auto'
+                                  : 'bg-white border border-gray-200 text-gray-900'
+                              }`}>
+                                <p className="text-sm leading-relaxed">{message.message}</p>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-2 flex items-center">
+                                <span className="font-medium">{message.sender}</span>
+                                <span className="mx-1">•</span>
+                                <span>{message.timestamp}</span>
+                              </p>
+                            </div>
+                            {message.role === 'officiant' && (
+                              <Avatar className="ring-2 ring-blue-100">
+                                <AvatarImage src={message.avatar} />
+                                <AvatarFallback className="bg-blue-500 text-white">{message.sender?.split(' ').map((n: string) => n[0]).join('') || 'WO'}</AvatarFallback>
+                              </Avatar>
+                            )}
+                          </div>
+                        ))
+                      )}
                     </div>
 
                     {/* Message Attachments Display */}
