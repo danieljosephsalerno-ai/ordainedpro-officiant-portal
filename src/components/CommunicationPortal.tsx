@@ -3407,17 +3407,12 @@ Note: This is an initial draft. Further development needed to incorporate specif
       setMessageAttachments([])
       setShowAttachments(false)
 
-      // Show detailed result
-      if (emailsSent > 0 && emailErrors.length === 0) {
-        alert(`✅ Message sent successfully!\n\nEmails sent to: ${recipientEmails.join(", ")}`)
-      } else if (emailsSent > 0 && emailErrors.length > 0) {
-        alert(`⚠️ Message sent with some issues:\n\n✅ Sent: ${emailsSent}\n❌ Failed:\n${emailErrors.join("\n")}`)
-      } else if (emailErrors.length > 0) {
-        alert(`❌ Failed to send emails:\n\n${emailErrors.join("\n")}\n\nMessage was saved but emails not delivered.`)
-      } else if (recipientEmails.length === 0) {
-        alert(`⚠️ Message saved but no email addresses found for this couple.\n\nPlease add email addresses in the couple's profile.`)
-      } else {
-        alert("Message saved!")
+      // Log results (no popup - the message appears in the conversation)
+      if (emailsSent > 0) {
+        console.log(`✅ Emails sent to: ${recipientEmails.join(", ")}`)
+      }
+      if (emailErrors.length > 0) {
+        console.warn(`⚠️ Some emails failed:`, emailErrors)
       }
 
     } catch (error) {
