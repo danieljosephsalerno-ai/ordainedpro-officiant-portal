@@ -10,8 +10,6 @@
 - ✅ **FIXED: Add Ceremony crash** (onAddCeremony callback now properly called)
 - ✅ **Code synced to GitHub** - Netlify deploys automatically from `main` branch
 - ✅ **FIXED: handleSendMessage now actually sends emails!** (was just showing alert before)
-- ✅ **FIXED: MessengerPanel extracted** - CommunicationPortal now smaller (~800 lines vs 3000+)
-- ✅ **Real-time messaging code added** - MessengerPanel has INSERT/UPDATE/DELETE subscriptions
 
 ## Deployment Status
 - **GitHub Repo:** danieljosephsalerno-ai/ordainedpro-officiant-portal
@@ -54,23 +52,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 - [x] **Synced code to GitHub repo**
 
 ## Remaining Tasks
-- [ ] **Run SQL in Supabase** to enable realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE messages;`
+- [ ] Enable realtime on messages table in Supabase
 - [ ] Test email reply flow end-to-end
-
-## Real-time Messaging (v392)
-- ✅ Added Supabase real-time subscription for INSERT/UPDATE/DELETE events
-- ✅ Messages append seamlessly without screen flicker
-- ✅ Browser notifications for new couple messages
-- ✅ Duplicate prevention (won't double-add messages)
-- ✅ Proper cleanup on component unmount
-- ⚠️ **User action required:** Run SQL command in Supabase to enable realtime
-
-## MessengerPanel Extraction (v393)
-- ✅ Extracted messenger into separate `MessengerPanel.tsx` component (580 lines)
-- ✅ CommunicationPortal reduced from 9,571 → 9,097 lines (-474 lines)
-- ✅ Exact same UI and functionality preserved
-- ✅ All state, functions, and real-time subscriptions moved to MessengerPanel
-- ✅ No changes to how messages are sent/received
 
 ## Notes
 - Netlify is connected to GitHub repo - no need for Same.new deploy
