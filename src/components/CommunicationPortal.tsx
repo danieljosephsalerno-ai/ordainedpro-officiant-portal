@@ -2715,8 +2715,29 @@ Note: This is an initial draft. Further development needed to incorporate specif
     alert(`Ceremony for ${newCeremony.brideName} & ${newCeremony.groomName} has been saved!\n\nYou can now switch to them using the "Switch Ceremony" button.`)
   }
 
-  const handleEditCoupleInfo = () => {
-    // Update the couple info in allCouples array
+ const handleEditCoupleInfo = async () => {
+    if (!editCoupleInfo?.id) {
+      alert("No couple selected")
+      return
+    }
+
+    // Save to Supabase
+    const result = await CoupleDataService.updateCouple(editCoupleInfo.id, {
+      bride_name: editCoupleInfo.brideName,
+      groom_name: editCoupleInfo.groomName,
+      bride_email: editCoupleInfo.brideEmail || null,
+      groom_email: editCoupleInfo.groomEmail || null,
+      bride_phone: editCoupleInfo.bridePhone || null,
+      groom_phone: editCoupleInfo.groomPhone || null,
+      notes: editCoupleInfo.specialRequests || null
+    })
+
+    if (!result.ok) {
+      alert("Failed to save: " + (result.error || "Unknown error"))
+      return
+    }
+
+    // Update local state
     const updatedCouples = [...allCouples]
     updatedCouples[activeCoupleIndex] = {
       ...updatedCouples[activeCoupleIndex],
@@ -2724,14 +2745,46 @@ Note: This is an initial draft. Further development needed to incorporate specif
     }
     setAllCouples(updatedCouples)
 
-    console.log("Updating couple info:", editCoupleInfo)
+    console.log("✅ Couple info saved to Supabase:", editCoupleInfo)
     setShowEditCoupleDialog(false)
-
-    // Show success message
-    alert("Couple information updated successfully!")
+    alert("Couple information saved!")
   }
 
-  const handleOpenEditWeddingDialog = () => {
+  const handleEditWeddingDetails = async () => {
+    if (!editCoupleInfo?.id) {
+      alert("No couple selected")
+      return
+    }
+
+    // Save to Supabase
+    const result = await CoupleDataService.updateCouple(editCoupleInfo.id, {
+      venue_name: editWeddingDetails.venueName || null,
+      venue_address: editWeddingDetails.venueAddress || null,
+      wedding_date: editWeddingDetails.weddingDate || null,
+      start_time: editWeddingDetails.startTime || null,
+      end_time: editWeddingDetails.endTime || null,
+      expected_guests: editWeddingDetails.expectedGuests ? parseInt(editWeddingDetails.expectedGuests) : null
+    })
+
+    if (!result.ok) {
+      alert("Failed to save: " + (result.error || "Unknown error"))
+      return
+    }
+
+    const coupleId = `${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}`
+    setSavedWeddingDetails(prev => ({
+      ...prev,
+      [coupleId]: { ...editWeddingDetails }
+    }))
+
+    const updatedCouples = [...allCouples]
+    updatedCouples[activeCoupleIndex].weddingDetails = { ...editWeddingDetails }
+    setAllCouples(updatedCouples)
+
+    console.log("✅ Wedding details saved to Supabase:", editWeddingDetails)
+    setShowEditWeddingDialog(false)
+    alert("Wedding details saved!")
+  }
     // Load saved data for current couple when opening the form
     const coupleId = `${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}`
     if (savedWeddingDetails[coupleId]) {
