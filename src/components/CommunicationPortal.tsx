@@ -62,6 +62,7 @@ import { ScheduleMeetingDialog, Meeting } from "@/components/ScheduleMeetingDial
 import { FileUpload, UploadedFile } from "@/components/FileUpload"
 import { ContractUploadDialog, Contract } from "@/components/ContractUploadDialog"
 import { OfficiantDashboardDialog } from "@/components/OfficiantDashboardDialog"
+import * as CoupleDataService from "@/services/couple-data-service"
 
 // Helper function to generate consistent colors based on couple ID
 const getCoupleColors = (coupleId: number) => {
