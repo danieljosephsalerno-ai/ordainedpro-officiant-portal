@@ -62,7 +62,6 @@ import { ScheduleMeetingDialog, Meeting } from "@/components/ScheduleMeetingDial
 import { FileUpload, UploadedFile } from "@/components/FileUpload"
 import { ContractUploadDialog, Contract } from "@/components/ContractUploadDialog"
 import { OfficiantDashboardDialog } from "@/components/OfficiantDashboardDialog"
-import * as CoupleDataService from "@/services/couple-data-service"
 
 // Helper function to generate consistent colors based on couple ID
 const getCoupleColors = (coupleId: number) => {
@@ -190,7 +189,7 @@ const generateAIResponse = (question: Question, previousResponses: Record<string
 
     `${question.question}`,
 
-    question.aiRecommendation ? `ðŸ’¡ ${question.aiRecommendation}` : ''
+    question.aiRecommendation ? `💡 ${question.aiRecommendation}` : ''
   ].filter(Boolean)
 
   return responses.join('\n\n')
@@ -204,7 +203,7 @@ const generateRecommendation = (responses: Record<string, string>): string => {
   let recommendation = "Based on your preferences, here's what I recommend for your ceremony script:\n\n"
 
   if (ceremonyType) {
-    recommendation += `ðŸ“ **Ceremony Style**: Since you've chosen a ${ceremonyType.toLowerCase()} ceremony, `
+    recommendation += `📝 **Ceremony Style**: Since you've chosen a ${ceremonyType.toLowerCase()} ceremony, `
     if (ceremonyType === 'Traditional') {
       recommendation += "I'll include classic elements like traditional vows, ring exchange, and formal language.\n\n"
     } else if (ceremonyType === 'Modern') {
@@ -215,11 +214,11 @@ const generateRecommendation = (responses: Record<string, string>): string => {
   }
 
   if (duration) {
-    recommendation += `â° **Timing**: For a ${duration.toLowerCase()} ceremony, I'll structure the script with appropriate pacing and content.\n\n`
+    recommendation += `⏰ **Timing**: For a ${duration.toLowerCase()} ceremony, I'll structure the script with appropriate pacing and content.\n\n`
   }
 
   if (tone) {
-    recommendation += `ðŸŽ­ **Tone**: The ${tone.toLowerCase()} approach will be reflected in the language and style throughout.\n\n`
+    recommendation += `🎭 **Tone**: The ${tone.toLowerCase()} approach will be reflected in the language and style throughout.\n\n`
   }
 
   recommendation += "Would you like me to start generating your personalized ceremony script now? I can always adjust it based on any additional preferences you have!"
@@ -609,11 +608,11 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
   // Log saved ceremonies for debugging
   useEffect(() => {
     if (savedCeremonies.length > 0) {
-      console.log("ðŸ“‹ Saved Ceremonies:", savedCeremonies)
+      console.log("📋 Saved Ceremonies:", savedCeremonies)
     }
   }, [savedCeremonies])
 
-  // Load current user, officiant profile, and couples from Supabase
+  // Load current user and officiant profile
   useEffect(() => {
     const loadUserAndProfile = async () => {
       try {
@@ -623,7 +622,7 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
           console.log("No user session found")
           return
         }
-        console.log("âœ… Loaded user:", user.id)
+        console.log("✅ Loaded user:", user.id)
         setCurrentUser(user)
 
         // Load officiant profile
@@ -634,42 +633,8 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
           .single()
 
         if (profile) {
-          console.log("âœ… Loaded profile:", profile.business_name)
+          console.log("✅ Loaded profile:", profile.business_name)
           setOfficiantProfile(profile)
-        }
-
-        // Load couples from Supabase
-        const couplesResult = await CoupleDataService.loadCouples(user.id)
-        if (couplesResult.ok && couplesResult.data && couplesResult.data.length > 0) {
-          const formattedCouples = couplesResult.data.map((c: any, index: number) => ({
-            id: c.id,
-            brideName: c.bride_name || "",
-            brideEmail: c.bride_email || "",
-            bridePhone: c.bride_phone || "",
-            brideAddress: "",
-            groomName: c.groom_name || "",
-            groomEmail: c.groom_email || "",
-            groomPhone: c.groom_phone || "",
-            groomAddress: "",
-            address: "",
-            emergencyContact: "",
-            specialRequests: c.notes || "",
-            isActive: c.is_active !== false,
-            colors: getCoupleColors(index + 1),
-            weddingDetails: {
-              venueName: c.venue_name || "",
-              venueAddress: c.venue_address || "",
-              weddingDate: c.wedding_date || "",
-              startTime: c.start_time || "",
-              endTime: c.end_time || "",
-              expectedGuests: c.expected_guests?.toString() || "",
-              officiantNotes: ""
-            }
-          }))
-          console.log("âœ… Loaded", formattedCouples.length, "couples from Supabase")
-          setAllCouples(formattedCouples)
-          setEditCoupleInfo(formattedCouples[0])
-          setEditWeddingDetails(formattedCouples[0].weddingDetails)
         }
       } catch (err) {
         console.error("Error loading user/profile:", err)
@@ -684,7 +649,7 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     if (!currentUser || !editCoupleInfo?.id) return
 
     try {
-      console.log("ðŸ“¨ Loading messages for couple:", editCoupleInfo.id)
+      console.log("📨 Loading messages for couple:", editCoupleInfo.id)
 
       const { data: messagesData, error } = await supabase
         .from("messages")
@@ -694,12 +659,12 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
         .order("created_at", { ascending: true })
 
       if (error) {
-        console.error("âŒ Error loading messages:", error)
+        console.error("❌ Error loading messages:", error)
         return
       }
 
       if (messagesData && messagesData.length > 0) {
-        console.log("âœ… Loaded", messagesData.length, "messages")
+        console.log("✅ Loaded", messagesData.length, "messages")
 
         // Transform to display format
         const formattedMessages = messagesData.map(msg => ({
@@ -713,11 +678,11 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
 
         setMessages(formattedMessages)
       } else {
-        console.log("ðŸ“­ No messages found for this couple")
+        console.log("📭 No messages found for this couple")
         setMessages([])
       }
     } catch (err) {
-      console.error("âŒ Error in loadMessages:", err)
+      console.error("❌ Error in loadMessages:", err)
     }
   }, [currentUser, editCoupleInfo?.id])
 
@@ -960,13 +925,13 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
 
   const getEventTypeIcon = (type: string) => {
     switch (type) {
-      case 'meeting': return 'ðŸ¤'
-      case 'task': return 'âœ…'
-      case 'rehearsal': return 'ðŸŽ­'
-      case 'ceremony': return 'ðŸ’’'
-      case 'preparation': return 'âš™ï¸'
-      case 'follow-up': return 'ðŸ“ž'
-      default: return 'ðŸ“…'
+      case 'meeting': return '🤝'
+      case 'task': return '✅'
+      case 'rehearsal': return '🎭'
+      case 'ceremony': return '💒'
+      case 'preparation': return '⚙️'
+      case 'follow-up': return '📞'
+      default: return '📅'
     }
   }
 
@@ -1048,14 +1013,14 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     }
 
     if (lowerInput.includes('generate') || lowerInput.includes('create') || lowerInput.includes('yes')) {
-      return "Excellent! I'm generating a personalized ceremony script for Sarah Johnson & David Chen. This will include:\n\nâ€¢ Processional guidance\nâ€¢ Opening words\nâ€¢ Exchange of vows section\nâ€¢ Ring ceremony\nâ€¢ Unity ceremony (optional)\nâ€¢ Pronouncement and kiss\nâ€¢ Recessional\n\nThe script is being created and will be saved to your files. Would you like me to customize any specific sections?"
+      return "Excellent! I'm generating a personalized ceremony script for Sarah Johnson & David Chen. This will include:\n\n• Processional guidance\n• Opening words\n• Exchange of vows section\n• Ring ceremony\n• Unity ceremony (optional)\n• Pronouncement and kiss\n• Recessional\n\nThe script is being created and will be saved to your files. Would you like me to customize any specific sections?"
     }
 
     if (lowerInput.includes('vows') || lowerInput.includes('rings')) {
-      return "For the vow exchange, I can provide:\n\nâ€¢ Traditional vows template\nâ€¢ Guide for personal vow writing\nâ€¢ Sample vow examples\nâ€¢ Ring exchange wording\n\nWould you like me to create a complete vows section for their ceremony?"
+      return "For the vow exchange, I can provide:\n\n• Traditional vows template\n• Guide for personal vow writing\n• Sample vow examples\n• Ring exchange wording\n\nWould you like me to create a complete vows section for their ceremony?"
     }
 
-    return "I understand! Let me help you with that. I can assist with:\n\nâ€¢ Creating ceremony scripts from scratch\nâ€¢ Customizing existing templates\nâ€¢ Adding personal touches and stories\nâ€¢ Incorporating special readings or music\nâ€¢ Adjusting tone and style\n\nWhat specific aspect of the ceremony script would you like to work on first?"
+    return "I understand! Let me help you with that. I can assist with:\n\n• Creating ceremony scripts from scratch\n• Customizing existing templates\n• Adding personal touches and stories\n• Incorporating special readings or music\n• Adjusting tone and style\n\nWhat specific aspect of the ceremony script would you like to work on first?"
   }
 
   const handleGenerateScript = (scriptType: string) => {
@@ -1344,17 +1309,17 @@ Mr. Script - Your Personal Wedding Script Creator`
       const scriptGeneratedMessage: ChatMessage = {
         id: `ai-script-generated-${Date.now()}`,
         type: 'ai',
-        content: `ðŸŽ‰ **Your ceremony script has been generated!**
+        content: `🎉 **Your ceremony script has been generated!**
 
 I've created a beautiful ${userResponses['ceremony-type'] || selectedCeremonyStyle} ceremony script for ${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}.
 
 The script includes:
-âœ… Opening words and processional
-âœ… Declaration of intent
-âœ… ${userResponses['vows-type'] || selectedVowsType} vows
-${(userResponses['special-elements'] || selectedUnityCeremony) !== 'None' ? `âœ… ${userResponses['special-elements'] || selectedUnityCeremony} unity ceremony` : ''}
-âœ… Ring exchange ceremony
-âœ… Pronouncement and recessional
+✅ Opening words and processional
+✅ Declaration of intent
+✅ ${userResponses['vows-type'] || selectedVowsType} vows
+${(userResponses['special-elements'] || selectedUnityCeremony) !== 'None' ? `✅ ${userResponses['special-elements'] || selectedUnityCeremony} unity ceremony` : ''}
+✅ Ring exchange ceremony
+✅ Pronouncement and recessional
 
 **Your script is ready!** Click the "Generate Final Script" button below to open it in the full editor where you can make any final adjustments.`,
         timestamp: new Date()
@@ -1441,10 +1406,10 @@ ${(userResponses['special-elements'] || selectedUnityCeremony) !== 'None' ? `â�
     setTimeout(() => {
       let aiResponse = `Perfect! I have all the key details from your Quick Setup:
 
-âœ… **Ceremony Style**: ${selectedCeremonyStyle}
-âœ… **Duration**: ${selectedCeremonyLength}
-âœ… **Unity Ceremony**: ${selectedUnityCeremony || "None selected"}
-âœ… **Vows**: ${selectedVowsType || "Not specified"}
+✅ **Ceremony Style**: ${selectedCeremonyStyle}
+✅ **Duration**: ${selectedCeremonyLength}
+✅ **Unity Ceremony**: ${selectedUnityCeremony || "None selected"}
+✅ **Vows**: ${selectedVowsType || "Not specified"}
 
 Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}. Let me focus on the remaining details to perfect your script:`
 
@@ -1615,7 +1580,7 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
         localStorage.setItem(`script_${editingScript.id}_autosave_time`, timestamp)
 
         console.log(`Auto-saved "${editingScript.title}" with formatting at ${timestamp}`)
-        alert(`ðŸ’¾ Auto-saved "${editingScript.title}" with formatting at ${timestamp}`)
+        alert(`💾 Auto-saved "${editingScript.title}" with formatting at ${timestamp}`)
       } else {
         alert('Nothing to auto-save - script is empty!')
       }
@@ -1820,7 +1785,7 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
 
     // Show success message
     if (newBalance === 0) {
-      alert("Payment recorded successfully! This ceremony is now PAID IN FULL! ðŸŽ‰")
+      alert("Payment recorded successfully! This ceremony is now PAID IN FULL! 🎉")
     } else {
       alert(`Payment of ${amount} recorded successfully!\n\nRemaining balance: ${newBalance}`)
     }
@@ -1914,9 +1879,9 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
 The script has been added to your Generated Scripts. I've automatically replaced all placeholder names with the couple's actual names.
 
 You can now:
-â€¢ View and edit the script
-â€¢ Ask me to make specific changes
-â€¢ Refine any section you'd like
+• View and edit the script
+• Ask me to make specific changes
+• Refine any section you'd like
 
 What would you like me to help you with in this script?`,
         timestamp: new Date().toLocaleTimeString()
@@ -2039,12 +2004,12 @@ Pastor Michael Adams`,
       const MAX_CHARACTERS = 7000
 
       if (plainTextContent.length < MIN_CHARACTERS) {
-        alert(`âŒ Script must be at least ${MIN_CHARACTERS} characters long.\n\nCurrent length: ${plainTextContent.length} characters\nPlease add more content before saving.`)
+        alert(`❌ Script must be at least ${MIN_CHARACTERS} characters long.\n\nCurrent length: ${plainTextContent.length} characters\nPlease add more content before saving.`)
         return
       }
 
       if (plainTextContent.length > MAX_CHARACTERS) {
-        alert(`âŒ Script cannot exceed ${MAX_CHARACTERS} characters.\n\nCurrent length: ${plainTextContent.length} characters\nPlease reduce the content before saving.`)
+        alert(`❌ Script cannot exceed ${MAX_CHARACTERS} characters.\n\nCurrent length: ${plainTextContent.length} characters\nPlease reduce the content before saving.`)
         return
       }
 
@@ -2110,7 +2075,7 @@ Pastor Michael Adams`,
       })
 
       const actionText = isNewScript ? 'created' : 'saved'
-      alert(`âœ… Script "${editingScript.title}" ${actionText} successfully!\n\nSaved on: ${currentDate}\nContent: ${plainTextContent.length} characters\nFormatting preserved!`)
+      alert(`✅ Script "${editingScript.title}" ${actionText} successfully!\n\nSaved on: ${currentDate}\nContent: ${plainTextContent.length} characters\nFormatting preserved!`)
       setShowScriptEditorDialog(false)
       setEditingScript(null)
       setScriptContent("")
@@ -2187,24 +2152,24 @@ Pastor Michael Adams`,
     const allAttachments = [...scriptAttachments, ...fileAttachments]
 
     // Build message details
-    const scriptsList = selectedScripts.map(s => `â€¢ ${s.title} (${s.type})`).join('\n')
-    const filesList = selectedFiles.map(f => `â€¢ ${f.name} (${f.size})`).join('\n')
+    const scriptsList = selectedScripts.map(s => `• ${s.title} (${s.type})`).join('\n')
+    const filesList = selectedFiles.map(f => `• ${f.name} (${f.size})`).join('\n')
 
     let itemsDescription = ''
     if (selectedScripts.length > 0) {
-      itemsDescription += `ðŸ“œ Scripts (${selectedScripts.length}):\n${scriptsList}\n\n`
+      itemsDescription += `📜 Scripts (${selectedScripts.length}):\n${scriptsList}\n\n`
     }
     if (selectedFiles.length > 0) {
-      itemsDescription += `ðŸ“Ž Files (${selectedFiles.length}):\n${filesList}\n\n`
+      itemsDescription += `📎 Files (${selectedFiles.length}):\n${filesList}\n\n`
     }
 
     // Add to messaging platform
     setMessageAttachments(allAttachments)
-    setNewMessage(`ðŸ“¦ Wedding Documents Shared
-â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+    setNewMessage(`📦 Wedding Documents Shared
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ðŸ‘°ðŸ¤µ For: ${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}
-ðŸ“§ Sent to: ${recipient}
+👰🤵 For: ${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}
+📧 Sent to: ${recipient}
 
 ${itemsDescription}
 ${shareScriptForm.body}`)
@@ -2297,7 +2262,7 @@ ${shareScriptForm.body}`)
 
     // Add to messaging platform
     setMessageAttachments([contractAttachment])
-    setNewMessage(`ðŸ“§ Email sent to: ${recipient}\nðŸ“„ Subject: ${emailForm.subject}\n\n${emailForm.body}`)
+    setNewMessage(`📧 Email sent to: ${recipient}\n📄 Subject: ${emailForm.subject}\n\n${emailForm.body}`)
     setShowAttachments(true)
 
     // Auto-send the message
@@ -2338,10 +2303,10 @@ I hope this message finds you well and that your wedding planning is going smoot
 This is a friendly reminder regarding your upcoming payment for our wedding ceremony services.
 
 Payment Details:
-â€¢ Total Amount: $${paymentInfo.totalAmount}
-â€¢ Deposit Paid: $${paymentInfo.depositPaid}
-â€¢ Balance Due: $${paymentInfo.balance}
-â€¢ Due Date: ${paymentInfo.finalPaymentDue}
+• Total Amount: $${paymentInfo.totalAmount}
+• Deposit Paid: $${paymentInfo.depositPaid}
+• Balance Due: $${paymentInfo.balance}
+• Due Date: ${paymentInfo.finalPaymentDue}
 
 Please ensure your final payment is submitted by the due date to confirm all arrangements for your special day.
 
@@ -2380,7 +2345,7 @@ pastor.michael@ordainedpro.com`
     }
 
     // Add to messaging platform
-    setNewMessage(`ðŸ’° Payment Reminder sent to: ${recipient}\nðŸ“„ Subject: ${paymentReminderForm.subject}\n\n${paymentReminderForm.body}`)
+    setNewMessage(`💰 Payment Reminder sent to: ${recipient}\n📄 Subject: ${paymentReminderForm.subject}\n\n${paymentReminderForm.body}`)
 
     // Auto-send the message
     setTimeout(() => {
@@ -2609,83 +2574,84 @@ Note: This is an initial draft. Further development needed to incorporate specif
     { id: 3, title: "Rustic Barn Wedding", author: "Minister Lisa K.", price: 24, rating: 4.7, sales: 98 }
   ]
 
-  const handleAddCeremony = async () => {
+  const handleAddCeremony = () => {
     // Validate that required fields are filled
     if (!newCeremony.ceremonyName || !newCeremony.brideName || !newCeremony.groomName) {
       alert("Please fill in Ceremony Name, Bride Name, and Groom Name")
       return
     }
 
-    if (!currentUser?.id) {
-      alert("Please log in to add a ceremony")
-      return
+    // Save the ceremony with a unique ID and creation timestamp
+    const ceremonyToSave = {
+      ...newCeremony,
+      id: Date.now(),
+      createdAt: new Date().toISOString()
     }
 
-    // Save to Supabase
-    const result = await CoupleDataService.addCeremony(currentUser.id, {
-      brideName: newCeremony.brideName,
-      groomName: newCeremony.groomName,
-      brideEmail: newCeremony.brideEmail,
-      groomEmail: newCeremony.groomEmail,
-      bridePhone: newCeremony.bridePhone,
-      groomPhone: newCeremony.groomPhone,
-      venueName: newCeremony.venueName,
-      venueAddress: newCeremony.venueAddress,
-      ceremonyDate: newCeremony.ceremonyDate,
-      ceremonyTime: newCeremony.ceremonyTime,
-      expectedGuests: newCeremony.expectedGuests,
-      notes: newCeremony.notes
-    })
+    setSavedCeremonies(prev => [...prev, ceremonyToSave])
+    console.log("Ceremony saved:", ceremonyToSave)
 
-    if (!result.ok || !result.data) {
-      alert("Failed to save ceremony: " + (result.error || "Unknown error"))
-      return
-    }
-
-    // Create the new couple object from Supabase response
+    // Create the new couple object
     const newCouple = {
-      id: result.data.id,
-      brideName: result.data.bride_name,
-      brideEmail: result.data.bride_email || "",
-      bridePhone: result.data.bride_phone || "",
-      brideAddress: "",
-      groomName: result.data.groom_name,
-      groomEmail: result.data.groom_email || "",
-      groomPhone: result.data.groom_phone || "",
-      groomAddress: "",
+      id: Date.now(), // Generate a unique ID
+      brideName: newCeremony.brideName,
+      brideEmail: newCeremony.brideEmail,
+      bridePhone: newCeremony.bridePhone,
+      brideAddress: newCeremony.brideAddress,
+      groomName: newCeremony.groomName,
+      groomEmail: newCeremony.groomEmail,
+      groomPhone: newCeremony.groomPhone,
+      groomAddress: newCeremony.groomAddress,
       address: "",
       emergencyContact: "",
-      specialRequests: result.data.notes || "",
-      isActive: true,
-      colors: getCoupleColors(allCouples.length + 1),
+      specialRequests: newCeremony.notes,
+      isActive: true, // New ceremonies are active by default
+      colors: getCoupleColors(allCouples.length + 1), // Assign consistent colors based on position
       weddingDetails: {
-        venueName: result.data.venue_name || "",
-        venueAddress: result.data.venue_address || "",
-        weddingDate: result.data.wedding_date || "",
-        startTime: result.data.start_time || "",
-        endTime: result.data.end_time || "",
-        expectedGuests: result.data.expected_guests?.toString() || "",
+        venueName: newCeremony.venueName,
+        venueAddress: newCeremony.venueAddress,
+        weddingDate: newCeremony.ceremonyDate,
+        startTime: newCeremony.ceremonyTime,
+        endTime: "",
+        expectedGuests: newCeremony.expectedGuests,
         officiantNotes: ""
       }
     }
 
-    // Add the new couple to allCouples array
+    // Add the new couple to allCouples array so it appears in Switch Ceremony dialog
     setAllCouples(prev => [...prev, newCouple])
 
     // Set the newly created couple as the active couple
-    setActiveCoupleIndex(allCouples.length)
+    setActiveCoupleIndex(allCouples.length) // Index of the new couple
     setEditCoupleInfo(newCouple)
 
     // Save wedding details for this couple
     const coupleId = `${newCeremony.brideName} & ${newCeremony.groomName}`
     setSavedWeddingDetails(prev => ({
       ...prev,
-      [coupleId]: newCouple.weddingDetails
+      [coupleId]: {
+        venueName: newCeremony.venueName,
+        venueAddress: newCeremony.venueAddress,
+        weddingDate: newCeremony.ceremonyDate,
+        startTime: newCeremony.ceremonyTime,
+        endTime: "",
+        expectedGuests: newCeremony.expectedGuests,
+        officiantNotes: ""
+      }
     }))
 
-    setEditWeddingDetails(newCouple.weddingDetails)
+    setEditWeddingDetails({
+      venueName: newCeremony.venueName,
+      venueAddress: newCeremony.venueAddress,
+      weddingDate: newCeremony.ceremonyDate,
+      startTime: newCeremony.ceremonyTime,
+      endTime: "",
+      expectedGuests: newCeremony.expectedGuests,
+      officiantNotes: ""
+    })
 
-    console.log("âœ… Ceremony saved to Supabase:", result.data)
+    console.log("New couple added to allCouples array:", newCouple)
+    console.log("Total couples now:", allCouples.length + 1)
 
     // Reset form and close dialog
     setNewCeremony({
@@ -2710,34 +2676,12 @@ Note: This is an initial draft. Further development needed to incorporate specif
     })
     setShowAddCeremonyDialog(false)
 
-    // Show success with confetti
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
-    alert(`Ceremony for ${newCeremony.brideName} & ${newCeremony.groomName} has been saved!\n\nYou can now switch to them using the "Switch Ceremony" button.`)
+    // Show success message
+    alert(`Ceremony "${ceremonyToSave.ceremonyName}" for ${newCeremony.brideName} & ${newCeremony.groomName} has been saved successfully!\n\nThis couple has been added to your ceremony list and you can now switch to them using the "Switch Ceremony" button.`)
   }
 
- const handleEditCoupleInfo = async () => {
-    if (!editCoupleInfo?.id) {
-      alert("No couple selected")
-      return
-    }
-
-    // Save to Supabase
-    const result = await CoupleDataService.updateCouple(editCoupleInfo.id, {
-      bride_name: editCoupleInfo.brideName,
-      groom_name: editCoupleInfo.groomName,
-      bride_email: editCoupleInfo.brideEmail || null,
-      groom_email: editCoupleInfo.groomEmail || null,
-      bride_phone: editCoupleInfo.bridePhone || null,
-      groom_phone: editCoupleInfo.groomPhone || null,
-      notes: editCoupleInfo.specialRequests || null
-    })
-
-    if (!result.ok) {
-      alert("Failed to save: " + (result.error || "Unknown error"))
-      return
-    }
-
-    // Update local state
+  const handleEditCoupleInfo = () => {
+    // Update the couple info in allCouples array
     const updatedCouples = [...allCouples]
     updatedCouples[activeCoupleIndex] = {
       ...updatedCouples[activeCoupleIndex],
@@ -2745,46 +2689,14 @@ Note: This is an initial draft. Further development needed to incorporate specif
     }
     setAllCouples(updatedCouples)
 
-    console.log("✅ Couple info saved to Supabase:", editCoupleInfo)
+    console.log("Updating couple info:", editCoupleInfo)
     setShowEditCoupleDialog(false)
-    alert("Couple information saved!")
+
+    // Show success message
+    alert("Couple information updated successfully!")
   }
 
-  const handleEditWeddingDetails = async () => {
-    if (!editCoupleInfo?.id) {
-      alert("No couple selected")
-      return
-    }
-
-    // Save to Supabase
-    const result = await CoupleDataService.updateCouple(editCoupleInfo.id, {
-      venue_name: editWeddingDetails.venueName || null,
-      venue_address: editWeddingDetails.venueAddress || null,
-      wedding_date: editWeddingDetails.weddingDate || null,
-      start_time: editWeddingDetails.startTime || null,
-      end_time: editWeddingDetails.endTime || null,
-      expected_guests: editWeddingDetails.expectedGuests ? parseInt(editWeddingDetails.expectedGuests) : null
-    })
-
-    if (!result.ok) {
-      alert("Failed to save: " + (result.error || "Unknown error"))
-      return
-    }
-
-    const coupleId = `${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}`
-    setSavedWeddingDetails(prev => ({
-      ...prev,
-      [coupleId]: { ...editWeddingDetails }
-    }))
-
-    const updatedCouples = [...allCouples]
-    updatedCouples[activeCoupleIndex].weddingDetails = { ...editWeddingDetails }
-    setAllCouples(updatedCouples)
-
-    console.log("✅ Wedding details saved to Supabase:", editWeddingDetails)
-    setShowEditWeddingDialog(false)
-    alert("Wedding details saved!")
-  }
+  const handleOpenEditWeddingDialog = () => {
     // Load saved data for current couple when opening the form
     const coupleId = `${editCoupleInfo.brideName} & ${editCoupleInfo.groomName}`
     if (savedWeddingDetails[coupleId]) {
@@ -2976,7 +2888,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
     const reminderDate = new Date(task.dueDate)
     reminderDate.setDate(reminderDate.getDate() - task.reminderDays)
 
-    console.log(`ðŸ“§ Email notification scheduled:`)
+    console.log(`📧 Email notification scheduled:`)
     console.log(`Task: ${task.task}`)
     console.log(`Reminder Date: ${reminderDate.toDateString()}`)
     console.log(`Due: ${task.dueDate} at ${task.dueTime}`)
@@ -2989,24 +2901,24 @@ Note: This is an initial draft. Further development needed to incorporate specif
 
   const generateTaskReminderEmail = (task: Task) => {
     const priorityEmoji = {
-      low: 'ðŸŸ¢',
-      medium: 'ðŸŸ¡',
-      high: 'ðŸŸ ',
-      urgent: 'ðŸ”´'
+      low: '🟢',
+      medium: '🟡',
+      high: '🟠',
+      urgent: '🔴'
     }
 
     return {
       to: "pastor.michael@ordainedpro.com",
-      subject: `â° Task Reminder: ${task.task}`,
+      subject: `⏰ Task Reminder: ${task.task}`,
       body: `
         Dear Pastor Michael,
 
         This is a reminder for your upcoming task:
 
-        ðŸ“‹ Task: ${task.task}
-        ðŸ“… Due Date: ${new Date(task.dueDate).toLocaleDateString()} at ${task.dueTime}
+        📋 Task: ${task.task}
+        📅 Due Date: ${new Date(task.dueDate).toLocaleDateString()} at ${task.dueTime}
         ${priorityEmoji[task.priority]} Priority: ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-        ðŸ“ Category: ${task.category}
+        📁 Category: ${task.category}
 
         ${task.details ? `Details: ${task.details}` : ''}
 
@@ -3049,11 +2961,11 @@ Note: This is an initial draft. Further development needed to incorporate specif
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case 'low': return 'ðŸŸ¢'
-      case 'medium': return 'ðŸŸ¡'
-      case 'high': return 'ðŸŸ '
-      case 'urgent': return 'ðŸ”´'
-      default: return 'âšª'
+      case 'low': return '🟢'
+      case 'medium': return '🟡'
+      case 'high': return '🟠'
+      case 'urgent': return '🔴'
+      default: return '⚪'
     }
   }
 
@@ -3081,7 +2993,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
     // 2. Send email notification
     // 3. Set up response tracking
 
-    console.log(`ðŸ“§ MEETING INVITATION SENT:`)
+    console.log(`📧 MEETING INVITATION SENT:`)
     console.log(`Meeting: ${meeting.subject}`)
     console.log(`Date: ${meeting.date} at ${meeting.time}`)
     console.log(`Attendees: ${meeting.attendees.join(', ')}`)
@@ -3101,7 +3013,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
 
       updateMeetingStatus(meeting.id, randomResponse)
 
-      console.log(`ðŸ“¬ EMAIL RESPONSE RECEIVED:`)
+      console.log(`📬 EMAIL RESPONSE RECEIVED:`)
       console.log(`Meeting: ${meeting.subject}`)
       console.log(`Response: ${randomResponse.toUpperCase()}`)
       console.log(`Updated meeting status in portal calendar`)
@@ -3117,15 +3029,15 @@ Note: This is an initial draft. Further development needed to incorporate specif
     const meeting = meetings.find(m => m.id === meetingId)
     if (meeting) {
       const statusMessages = {
-        accepted: 'âœ… Meeting accepted by couple!',
-        declined: 'âŒ Meeting declined by couple. Please reschedule.',
-        confirmed: 'ðŸŽ‰ Meeting confirmed!',
-        pending: 'â³ Meeting response pending...'
+        accepted: '✅ Meeting accepted by couple!',
+        declined: '❌ Meeting declined by couple. Please reschedule.',
+        confirmed: '🎉 Meeting confirmed!',
+        pending: '⏳ Meeting response pending...'
       }
 
       // In a real app, this would be a toast notification
       setTimeout(() => {
-        alert(`ðŸ“… Meeting Update: ${meeting.subject}\n\n${statusMessages[status]}`)
+        alert(`📅 Meeting Update: ${meeting.subject}\n\n${statusMessages[status]}`)
       }, 100)
     }
   }
@@ -3148,26 +3060,26 @@ Note: This is an initial draft. Further development needed to incorporate specif
     switch (status) {
       case 'confirmed':
       case 'accepted':
-        return 'âœ…'
+        return '✅'
       case 'pending':
-        return 'â³'
+        return '⏳'
       case 'declined':
-        return 'âŒ'
+        return '❌'
       default:
-        return 'ðŸ“…'
+        return '📅'
     }
   }
 
   const getMeetingTypeIcon = (type: string) => {
     switch (type) {
       case 'video':
-        return 'ðŸ’»'
+        return '💻'
       case 'phone':
-        return 'ðŸ“ž'
+        return '📞'
       case 'in-person':
-        return 'ðŸ‘¥'
+        return '👥'
       default:
-        return 'ðŸ“…'
+        return '📅'
     }
   }
 
@@ -3196,7 +3108,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
       } else if (fileType.includes('pdf')) {
         return (
           <div className="text-center space-y-4">
-            <div className="text-6xl">ðŸ“„</div>
+            <div className="text-6xl">📄</div>
             <p className="text-gray-600">PDF Contract</p>
             <p className="font-medium">{contract.name}</p>
             <p className="text-sm text-gray-500">File type: {contract.file.type}</p>
@@ -3212,7 +3124,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
       } else {
         return (
           <div className="text-center space-y-4">
-            <div className="text-6xl">ðŸ“</div>
+            <div className="text-6xl">📝</div>
             <p className="text-gray-600">Contract Document</p>
             <p className="font-medium">{contract.name}</p>
             <p className="text-sm text-gray-500">File type: {contract.file.type}</p>
@@ -3230,7 +3142,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
       // If no file, show contract details
       return (
         <div className="text-center space-y-6">
-          <div className="text-6xl">ðŸ“‹</div>
+          <div className="text-6xl">📋</div>
           <div>
             <p className="text-gray-600 mb-2">Contract Information</p>
             <p className="font-medium text-xl">{contract.name}</p>
@@ -3305,7 +3217,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
     } else if (fileType.includes('pdf')) {
       return (
         <div className="text-center space-y-4">
-          <div className="text-6xl">ðŸ“„</div>
+          <div className="text-6xl">📄</div>
           <p className="text-gray-600">PDF Preview</p>
           <p className="font-medium">{file.name}</p>
           <p className="text-sm text-gray-500">Size: {file.size}</p>
@@ -3321,7 +3233,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
     } else if (fileType.includes('text/') || fileType.includes('txt')) {
       return (
         <div className="text-center space-y-4">
-          <div className="text-6xl">ðŸ“</div>
+          <div className="text-6xl">📝</div>
           <p className="text-gray-600">Text Document</p>
           <p className="font-medium">{file.name}</p>
           <p className="text-sm text-gray-500">Size: {file.size}</p>
@@ -3333,7 +3245,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
     } else if (fileType.includes('document') || fileType.includes('word') || fileType.includes('doc')) {
       return (
         <div className="text-center space-y-4">
-          <div className="text-6xl">ðŸ“</div>
+          <div className="text-6xl">📝</div>
           <p className="text-gray-600">Word Document</p>
           <p className="font-medium">{file.name}</p>
           <p className="text-sm text-gray-500">Size: {file.size}</p>
@@ -3417,15 +3329,15 @@ Note: This is an initial draft. Further development needed to incorporate specif
   }
 
   const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return 'ðŸ–¼ï¸'
-    if (fileType.startsWith('video/')) return 'ðŸŽ¥'
-    if (fileType.startsWith('audio/')) return 'ðŸŽµ'
-    if (fileType.includes('pdf')) return 'ðŸ“„'
-    if (fileType.includes('document') || fileType.includes('word')) return 'ðŸ“'
-    if (fileType.includes('spreadsheet') || fileType.includes('excel')) return 'ðŸ“Š'
-    if (fileType.includes('presentation') || fileType.includes('powerpoint')) return 'ðŸ“‹'
-    if (fileType.includes('zip') || fileType.includes('archive')) return 'ðŸ—œï¸'
-    return 'ðŸ“'
+    if (fileType.startsWith('image/')) return '🖼️'
+    if (fileType.startsWith('video/')) return '🎥'
+    if (fileType.startsWith('audio/')) return '🎵'
+    if (fileType.includes('pdf')) return '📄'
+    if (fileType.includes('document') || fileType.includes('word')) return '📝'
+    if (fileType.includes('spreadsheet') || fileType.includes('excel')) return '📊'
+    if (fileType.includes('presentation') || fileType.includes('powerpoint')) return '📋'
+    if (fileType.includes('zip') || fileType.includes('archive')) return '🗜️'
+    return '📁'
   }
 
   const handleSendMessage = async () => {
@@ -3451,7 +3363,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
       // Determine recipient emails
       const recipientEmails = [brideEmail, groomEmail].filter(Boolean)
 
-      console.log("ðŸ“§ Sending message to:", { coupleId, coupleName, recipientEmails, message: newMessage })
+      console.log("📧 Sending message to:", { coupleId, coupleName, recipientEmails, message: newMessage })
 
       // 1. Save message to Supabase
       if (currentUser) {
@@ -3471,9 +3383,9 @@ Note: This is an initial draft. Further development needed to incorporate specif
           .select()
 
         if (saveError) {
-          console.error("âŒ Error saving message to Supabase:", saveError)
+          console.error("❌ Error saving message to Supabase:", saveError)
         } else {
-          console.log("âœ… Message saved to Supabase:", savedMessage)
+          console.log("✅ Message saved to Supabase:", savedMessage)
 
           // Add to local messages state
           setMessages(prev => [...prev, {
@@ -3495,7 +3407,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
         if (!email) continue
 
         try {
-          console.log(`ðŸ“§ Attempting to send email to: ${email}`)
+          console.log(`📧 Attempting to send email to: ${email}`)
 
           const response = await fetch("/api/send-email", {
             method: "POST",
@@ -3512,18 +3424,18 @@ Note: This is an initial draft. Further development needed to incorporate specif
           })
 
           const result = await response.json()
-          console.log(`ðŸ“§ API Response for ${email}:`, result)
+          console.log(`📧 API Response for ${email}:`, result)
 
           if (response.ok && result.success) {
-            console.log(`âœ… Email sent to ${email}:`, result)
+            console.log(`✅ Email sent to ${email}:`, result)
             emailsSent++
           } else {
             const errorMsg = result.error || result.details || "Unknown error"
-            console.error(`âŒ Failed to send email to ${email}:`, result)
+            console.error(`❌ Failed to send email to ${email}:`, result)
             emailErrors.push(`${email}: ${errorMsg}`)
           }
         } catch (emailError) {
-          console.error(`âŒ Error sending email to ${email}:`, emailError)
+          console.error(`❌ Error sending email to ${email}:`, emailError)
           emailErrors.push(`${email}: Network error`)
         }
       }
@@ -3535,14 +3447,14 @@ Note: This is an initial draft. Further development needed to incorporate specif
 
       // Log results (no popup - the message appears in the conversation)
       if (emailsSent > 0) {
-        console.log(`âœ… Emails sent to: ${recipientEmails.join(", ")}`)
+        console.log(`✅ Emails sent to: ${recipientEmails.join(", ")}`)
       }
       if (emailErrors.length > 0) {
-        console.warn(`âš ï¸ Some emails failed:`, emailErrors)
+        console.warn(`⚠️ Some emails failed:`, emailErrors)
       }
 
     } catch (error) {
-      console.error("âŒ Error in handleSendMessage:", error)
+      console.error("❌ Error in handleSendMessage:", error)
       alert("Failed to send message. Please try again.")
     } finally {
       setIsSendingMessage(false)
@@ -3592,9 +3504,9 @@ Note: This is an initial draft. Further development needed to incorporate specif
 
 Congratulations on your upcoming wedding! Please find your ceremony services invoice attached.
 
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-ðŸŽŠ WEDDING CEREMONY INVOICE ðŸŽŠ
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+═══════════════════════════════════════
+🎊 WEDDING CEREMONY INVOICE 🎊
+═══════════════════════════════════════
 
 COUPLE: ${invoiceForm.coupleName}
 WEDDING DATE: ${new Date(invoiceForm.weddingDate).toLocaleDateString('en-US', {
@@ -3603,24 +3515,24 @@ WEDDING DATE: ${new Date(invoiceForm.weddingDate).toLocaleDateString('en-US', {
 VENUE: ${invoiceForm.venue}
 
 INVOICE DETAILS:
-â€¢ Invoice #: ${invoiceForm.invoiceNumber}
-â€¢ Invoice Date: ${new Date(invoiceForm.invoiceDate).toLocaleDateString()}
-â€¢ Due Date: ${new Date(invoiceForm.dueDate).toLocaleDateString()}
+• Invoice #: ${invoiceForm.invoiceNumber}
+• Invoice Date: ${new Date(invoiceForm.invoiceDate).toLocaleDateString()}
+• Due Date: ${new Date(invoiceForm.dueDate).toLocaleDateString()}
 
 SERVICES PROVIDED:
 ${invoiceForm.items.map(item =>
-  `â€¢ ${item.service}
+  `• ${item.service}
   Description: ${item.description}
   Category: ${item.category || 'Wedding Services'}
   Rate: ${item.quantity}x ${item.rate} = ${item.quantity * item.rate}`
 ).join('\n\n')}
 
 PAYMENT SUMMARY:
-â€¢ Subtotal: ${invoiceForm.subtotal}
-${invoiceForm.taxRate > 0 ? `â€¢ Tax (${invoiceForm.taxRate}%): ${invoiceForm.taxAmount}` : ''}
-â€¢ Deposit Previously Paid: -${invoiceForm.depositPaid}
-â€¢ Balance Due: ${invoiceForm.balanceDue}
-â€¢ TOTAL INVOICE AMOUNT: ${invoiceForm.total}
+• Subtotal: ${invoiceForm.subtotal}
+${invoiceForm.taxRate > 0 ? `• Tax (${invoiceForm.taxRate}%): ${invoiceForm.taxAmount}` : ''}
+• Deposit Previously Paid: -${invoiceForm.depositPaid}
+• Balance Due: ${invoiceForm.balanceDue}
+• TOTAL INVOICE AMOUNT: ${invoiceForm.total}
 
 PAYMENT METHODS ACCEPTED:
 ${invoiceForm.paymentMethods}
@@ -3638,11 +3550,11 @@ We're honored to be part of your special day and look forward to creating a beau
 Blessings,
 Pastor Michael Adams
 Licensed Wedding Officiant
-ðŸ“ž (555) 987-6543
-ðŸ“§ pastor.michael@ordainedpro.com
-ðŸŒ www.ordainedpro.com
+📞 (555) 987-6543
+📧 pastor.michael@ordainedpro.com
+🌐 www.ordainedpro.com
 
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•`
+═══════════════════════════════════════`
   }
 
   // Handle invoice generation and sending
@@ -3696,25 +3608,25 @@ Licensed Wedding Officiant
 
     // Add to messaging platform with detailed tracking
     setMessageAttachments([invoiceAttachment])
-    setNewMessage(`ðŸ“§ Wedding Invoice Sent
-â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+    setNewMessage(`📧 Wedding Invoice Sent
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ðŸ‘°ðŸ¤µ Couple: ${invoiceForm.coupleName}
-ðŸ“§ Sent to: ${recipients}
-ðŸ§¾ Invoice #: ${invoiceForm.invoiceNumber}
-ðŸ’’ Wedding Date: ${new Date(invoiceForm.weddingDate).toLocaleDateString()}
-ðŸ›ï¸ Venue: ${invoiceForm.venue}
+👰🤵 Couple: ${invoiceForm.coupleName}
+📧 Sent to: ${recipients}
+🧾 Invoice #: ${invoiceForm.invoiceNumber}
+💒 Wedding Date: ${new Date(invoiceForm.weddingDate).toLocaleDateString()}
+🏛️ Venue: ${invoiceForm.venue}
 
-ðŸ’° FINANCIAL SUMMARY:
-â€¢ Total Services: ${invoiceForm.total}
-â€¢ Deposit Paid: ${invoiceForm.depositPaid}
-â€¢ Balance Due: ${invoiceForm.balanceDue}
-ðŸ“… Payment Due: ${new Date(invoiceForm.dueDate).toLocaleDateString()}
+💰 FINANCIAL SUMMARY:
+• Total Services: ${invoiceForm.total}
+• Deposit Paid: ${invoiceForm.depositPaid}
+• Balance Due: ${invoiceForm.balanceDue}
+📅 Payment Due: ${new Date(invoiceForm.dueDate).toLocaleDateString()}
 
-ðŸ“‹ SERVICES INCLUDED:
-${invoiceForm.items.map(item => `â€¢ ${item.service} - ${item.quantity * item.rate}`).join('\n')}
+📋 SERVICES INCLUDED:
+${invoiceForm.items.map(item => `• ${item.service} - ${item.quantity * item.rate}`).join('\n')}
 
-ðŸ’³ Payment Methods: ${invoiceForm.paymentMethods}
+💳 Payment Methods: ${invoiceForm.paymentMethods}
 
 ${invoiceContent}`)
     setShowAttachments(true)
@@ -3808,7 +3720,7 @@ ${invoiceContent}`)
       return
     }
 
-    // ðŸŽ‰ Trigger confetti celebration!
+    // 🎉 Trigger confetti celebration!
     confetti({
       particleCount: 100,
       spread: 70,
@@ -3867,22 +3779,22 @@ ${invoiceContent}`)
 
       // Apply common modifications
       if (lowerRequest.includes('shorter') || lowerRequest.includes('brief')) {
-        modificationResponse += "âœ… Made the ceremony more concise and streamlined\n"
+        modificationResponse += "✅ Made the ceremony more concise and streamlined\n"
         updatedScript = updatedScript.replace(/\[.*?\]/g, '') // Remove bracketed instructions
       } else if (lowerRequest.includes('longer') || lowerRequest.includes('more detail')) {
-        modificationResponse += "âœ… Added more detailed elements and explanations\n"
+        modificationResponse += "✅ Added more detailed elements and explanations\n"
         updatedScript += `\n\nADDITIONAL ELEMENTS\n[Additional ceremonial elements and personal touches as requested]\n`
       } else if (lowerRequest.includes('personal') || lowerRequest.includes('customize')) {
-        modificationResponse += "âœ… Added more personalized elements\n"
+        modificationResponse += "✅ Added more personalized elements\n"
         updatedScript = updatedScript.replace('EXCHANGE OF VOWS', 'PERSONALIZED EXCHANGE OF VOWS\n[Customized vows reflecting the couple\'s unique relationship]')
       } else if (lowerRequest.includes('music') || lowerRequest.includes('song')) {
-        modificationResponse += "âœ… Added music cues and recommendations\n"
+        modificationResponse += "✅ Added music cues and recommendations\n"
         updatedScript = updatedScript.replace('PROCESSIONAL', 'PROCESSIONAL\n[Suggested music: "Canon in D" or couple\'s chosen processional song]')
       } else if (lowerRequest.includes('reading') || lowerRequest.includes('poem')) {
-        modificationResponse += "âœ… Added reading section\n"
+        modificationResponse += "✅ Added reading section\n"
         updatedScript = updatedScript.replace('EXCHANGE OF VOWS', 'SPECIAL READING\n[Insert chosen reading, poem, or scripture here]\n\nEXCHANGE OF VOWS')
       } else {
-        modificationResponse += "âœ… Applied your requested changes to the script\n"
+        modificationResponse += "✅ Applied your requested changes to the script\n"
         updatedScript += `\n\nCUSTOM MODIFICATION\n[Modified based on request: ${request}]\n`
       }
 
@@ -4879,7 +4791,7 @@ ${invoiceContent}`)
                               </div>
                               <p className="text-xs text-gray-500 mt-2 flex items-center">
                                 <span className="font-medium">{message.sender}</span>
-                                <span className="mx-1">â€¢</span>
+                                <span className="mx-1">•</span>
                                 <span>{message.timestamp}</span>
                               </p>
                             </div>
@@ -5307,7 +5219,7 @@ ${invoiceContent}`)
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 truncate">{file.name}</p>
                             <p className="text-sm text-gray-500">
-                              {file.size} â€¢ {file.uploadedBy}
+                              {file.size} • {file.uploadedBy}
                             </p>
                             <p className="text-xs text-gray-400">{file.date}</p>
                           </div>
@@ -5722,7 +5634,7 @@ ${invoiceContent}`)
                               </div>
                               <div>
                                 <p className="font-semibold text-gray-900">{payment.type}</p>
-                                <p className="text-sm text-gray-500">{payment.date} â€¢ {payment.method}</p>
+                                <p className="text-sm text-gray-500">{payment.date} • {payment.method}</p>
                               </div>
                             </div>
                             <div className="text-right">
@@ -6103,10 +6015,10 @@ ${invoiceContent}`)
                           <strong>Expert Mode Features:</strong>
                         </p>
                         <ul className="text-sm text-blue-700 mt-2 space-y-1">
-                          <li>â€¢ Full access to the script editor with advanced formatting</li>
-                          <li>â€¢ No guided questions - direct script creation</li>
-                          <li>â€¢ Complete customization freedom</li>
-                          <li>â€¢ Perfect for experienced officiants</li>
+                          <li>• Full access to the script editor with advanced formatting</li>
+                          <li>• No guided questions - direct script creation</li>
+                          <li>• Complete customization freedom</li>
+                          <li>• Perfect for experienced officiants</li>
                         </ul>
                       </div>
                     </div>
@@ -6472,7 +6384,7 @@ ${invoiceContent}`)
                                 onClick={() => document.execCommand('justifyLeft')}
                                 title="Align Left"
                               >
-                                â­²
+                                ⭲
                               </Button>
                               <Button
                                 size="sm"
@@ -6480,7 +6392,7 @@ ${invoiceContent}`)
                                 onClick={() => document.execCommand('justifyCenter')}
                                 title="Center"
                               >
-                                â­¿
+                                ⭿
                               </Button>
                               <Button
                                 size="sm"
@@ -6488,7 +6400,7 @@ ${invoiceContent}`)
                                 onClick={() => document.execCommand('justifyRight')}
                                 title="Align Right"
                               >
-                                â­¾
+                                ⭾
                               </Button>
                             </div>
 
@@ -6502,7 +6414,7 @@ ${invoiceContent}`)
                                 title="Bullet List"
                                 className="hover:bg-blue-50"
                               >
-                                â€¢ List
+                                • List
                               </Button>
                               <Button
                                 size="sm"
@@ -6588,9 +6500,9 @@ ${invoiceContent}`)
                                 Start writing your ceremony script here...
                                 <br /><br />
                                 Use the formatting tools above:
-                                <br />â€¢ <strong>Bold</strong>, <em>Italic</em>, and <u>Underline</u> text
-                                <br />â€¢ Color text with the color palette
-                                <br />â€¢ Create bullet and numbered lists
+                                <br />• <strong>Bold</strong>, <em>Italic</em>, and <u>Underline</u> text
+                                <br />• Color text with the color palette
+                                <br />• Create bullet and numbered lists
                               </div>
                             )}
                           </div>
@@ -6731,7 +6643,7 @@ ${invoiceContent}`)
                                     <div className="flex items-center space-x-1 text-sm text-gray-500">
                                       <Star className="w-3 h-3 text-yellow-400 fill-current" />
                                       <span>{script.rating}</span>
-                                      <span>â€¢</span>
+                                      <span>•</span>
                                       <span>{script.sales} sales</span>
                                     </div>
                                   </div>
@@ -6880,7 +6792,7 @@ ${invoiceContent}`)
                                   <div className="flex items-center space-x-1 text-sm text-gray-500 mt-1">
                                     <Star className="w-3 h-3 text-yellow-400 fill-current" />
                                     <span>{script.rating}</span>
-                                    <span>â€¢</span>
+                                    <span>•</span>
                                     <span>{script.sales} purchases</span>
                                   </div>
                                 </div>
@@ -6965,10 +6877,10 @@ ${invoiceContent}`)
                       <div>
                         <h4 className="font-semibold mb-3 text-blue-900">Popular Categories</h4>
                         <div className="space-y-2 text-sm">
-                          <p className="text-gray-600">â€¢ Traditional Religious</p>
-                          <p className="text-gray-600">â€¢ Modern Non-Religious</p>
-                          <p className="text-gray-600">â€¢ Interfaith Ceremonies</p>
-                          <p className="text-gray-600">â€¢ Outdoor/Destination</p>
+                          <p className="text-gray-600">• Traditional Religious</p>
+                          <p className="text-gray-600">• Modern Non-Religious</p>
+                          <p className="text-gray-600">• Interfaith Ceremonies</p>
+                          <p className="text-gray-600">• Outdoor/Destination</p>
                         </div>
                       </div>
                     </CardContent>
@@ -7540,7 +7452,7 @@ ${invoiceContent}`)
             <div className="text-sm text-gray-500">
               {viewingFile && (
                 <>
-                  <span className="font-medium">Uploaded by:</span> {viewingFile.uploadedBy} â€¢
+                  <span className="font-medium">Uploaded by:</span> {viewingFile.uploadedBy} •
                   <span className="font-medium ml-2">Date:</span> {viewingFile.date}
                 </>
               )}
@@ -8373,10 +8285,10 @@ ${invoiceContent}`)
                   <details className="cursor-pointer">
                     <summary className="font-medium">Suggested Terms</summary>
                     <div className="mt-1 text-xs bg-gray-50 p-2 rounded">
-                      â€¢ Final payment must be received at least 7 days before ceremony
-                      <br />â€¢ Cancellation policy: 50% refund if cancelled 30+ days prior
-                      <br />â€¢ Weather contingency plans included
-                      <br />â€¢ Late payments may incur additional fees
+                      • Final payment must be received at least 7 days before ceremony
+                      <br />• Cancellation policy: 50% refund if cancelled 30+ days prior
+                      <br />• Weather contingency plans included
+                      <br />• Late payments may incur additional fees
                     </div>
                   </details>
                 </div>
@@ -8573,7 +8485,7 @@ ${invoiceContent}`)
                   onClick={() => document.execCommand('justifyLeft')}
                   title="Align Left"
                 >
-                  â­²
+                  ⭲
                 </Button>
                 <Button
                   size="sm"
@@ -8581,7 +8493,7 @@ ${invoiceContent}`)
                   onClick={() => document.execCommand('justifyCenter')}
                   title="Center"
                 >
-                  â­¿
+                  ⭿
                 </Button>
                 <Button
                   size="sm"
@@ -8589,7 +8501,7 @@ ${invoiceContent}`)
                   onClick={() => document.execCommand('justifyRight')}
                   title="Align Right"
                 >
-                  â­¾
+                  ⭾
                 </Button>
               </div>
 
@@ -8603,7 +8515,7 @@ ${invoiceContent}`)
                   title="Bullet List"
                   className="hover:bg-blue-50"
                 >
-                  â€¢ List
+                  • List
                 </Button>
                 <Button
                   size="sm"
@@ -8716,10 +8628,10 @@ ${invoiceContent}`)
                   Start writing your ceremony script here...
                   <br /><br />
                   Use the formatting tools above:
-                  <br />â€¢ <strong>Bold</strong>, <em>Italic</em>, and <u>Underline</u> text
-                  <br />â€¢ Color text with the color palette
-                  <br />â€¢ Create bullet and numbered lists
-                  <br />â€¢ Adjust font size with A+/A- buttons
+                  <br />• <strong>Bold</strong>, <em>Italic</em>, and <u>Underline</u> text
+                  <br />• Color text with the color palette
+                  <br />• Create bullet and numbered lists
+                  <br />• Adjust font size with A+/A- buttons
                 </div>
               )}
             </div>
@@ -8952,7 +8864,7 @@ ${invoiceContent}`)
                         />
                         <div className="flex-1">
                           <p className="font-medium text-pink-900 text-sm">{script.title}</p>
-                          <p className="text-xs text-pink-700">{script.type} â€¢ {script.status}</p>
+                          <p className="text-xs text-pink-700">{script.type} • {script.status}</p>
                           <p className="text-xs text-pink-600">Last modified: {script.lastModified}</p>
                         </div>
                       </label>
@@ -8993,7 +8905,7 @@ ${invoiceContent}`)
                         />
                         <div className="flex-1">
                           <p className="font-medium text-blue-900 text-sm">{script.title}</p>
-                          <p className="text-xs text-blue-700">{script.type} â€¢ {script.status}</p>
+                          <p className="text-xs text-blue-700">{script.type} • {script.status}</p>
                           <p className="text-xs text-blue-600">Created: {script.createdDate}</p>
                         </div>
                       </label>
@@ -9034,7 +8946,7 @@ ${invoiceContent}`)
                         />
                         <div className="flex-1">
                           <p className="font-medium text-green-900 text-sm">{file.name}</p>
-                          <p className="text-xs text-green-700">{file.type.split('/').pop()} â€¢ {file.size}</p>
+                          <p className="text-xs text-green-700">{file.type.split('/').pop()} • {file.size}</p>
                         </div>
                       </label>
                     ))
@@ -9375,7 +9287,7 @@ ${invoiceContent}`)
                   <div key={payment.id} className="flex justify-between items-center p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div>
                       <p className="font-medium text-gray-900">{payment.type}</p>
-                      <p className="text-xs text-gray-600">{payment.date} â€¢ {payment.method}</p>
+                      <p className="text-xs text-gray-600">{payment.date} • {payment.method}</p>
                     </div>
                     <p className="font-bold text-green-700">${payment.amount}</p>
                   </div>
@@ -9508,7 +9420,7 @@ ${invoiceContent}`)
                   {(paymentInfo.balance - parseFloat(newPayment.amount)) === 0 && (
                     <div className="mt-3 p-2 bg-green-100 rounded-lg border border-green-300">
                       <p className="text-center font-bold text-green-800">
-                        ðŸŽ‰ This payment will mark the invoice as PAID IN FULL!
+                        🎉 This payment will mark the invoice as PAID IN FULL!
                       </p>
                     </div>
                   )}
