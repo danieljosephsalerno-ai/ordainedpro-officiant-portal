@@ -1,0 +1,653 @@
+/**
+ * Couple Data Service
+ *
+ * Handles all Supabase operations for couple-specific data.
+ * Everything is isolated per couple_id - no data commingling.
+ *
+ * Data stored per couple:
+ * - Messages (already working)
+ * - Tasks
+ * - Meetings/Schedule
+ * - Files
+ * - Contracts
+ * - Payments
+ * - Ceremony details
+ *
+ * Data stored per officiant (not per couple):
+ * - Scripts (user_files with is_template = true)
+ */
+
+import { supabase } from "@/supabase/utils/client"
+
+// ============================================
+// TYPES
+// ============================================
+
+export interface Couple {
+  id: number
+  user_id: string
+  bride_name: string
+  groom_name: string
+  bride_email?: string
+  groom_email?: string
+  bride_phone?: string
+  groom_phone?: string
+  venue_name?: string
+  venue_address?: string
+  wedding_date?: string
+  start_time?: string
+  end_time?: string
+  expected_guests?: number
+  notes?: string
+  is_active?: boolean
+  created_at?: string
+}
+
+export interface Task {
+  id: number
+  couple_id: number
+  user_id: string
+  task: string
+  completed: boolean
+  due_date?: string
+  due_time?: string
+  priority?: string
+  category?: string
+  details?: string
+  created_at?: string
+}
+
+export interface Meeting {
+  id: number
+  couple_id: number
+  user_id: string
+  subject: string
+  date: string
+  time: string
+  duration?: number
+  meeting_type?: string
+  location?: string
+  notes?: string
+  status?: string
+  created_at?: string
+}
+
+export interface CoupleFile {
+  id: number
+  couple_id: number
+  user_id: string
+  file_name: string
+  file_url: string
+  file_type?: string
+  file_size?: number
+  category?: string
+  created_at?: string
+}
+
+export interface Contract {
+  id: number
+  couple_id: number
+  user_id: string
+  name: string
+  file_url?: string
+  status?: string
+  sent_date?: string
+  signed_date?: string
+  created_at?: string
+}
+
+export interface Payment {
+  id: number
+  couple_id: number
+  user_id: string
+  description: string
+  amount: number
+  payment_type?: string
+  status?: string
+  due_date?: string
+  paid_date?: string
+  created_at?: string
+}
+
+// ============================================
+// CEREMONIES / COUPLES
+// ============================================
+
+export async function addCeremony(userId: string, ceremonyData: {
+  brideName: string
+  groomName: string
+  brideEmail?: string
+  groomEmail?: string
+  bridePhone?: string
+  groomPhone?: string
+  venueName?: string
+  venueAddress?: string
+  ceremonyDate?: string
+  ceremonyTime?: string
+  expectedGuests?: string
+  notes?: string
+}): Promise<{ ok: boolean; data?: Couple; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("couples")
+      .insert({
+        user_id: userId,
+        bride_name: ceremonyData.brideName,
+        groom_name: ceremonyData.groomName,
+        bride_email: ceremonyData.brideEmail || null,
+        groom_email: ceremonyData.groomEmail || null,
+        bride_phone: ceremonyData.bridePhone || null,
+        groom_phone: ceremonyData.groomPhone || null,
+        venue_name: ceremonyData.venueName || null,
+        venue_address: ceremonyData.venueAddress || null,
+        wedding_date: ceremonyData.ceremonyDate || null,
+        start_time: ceremonyData.ceremonyTime || null,
+        expected_guests: ceremonyData.expectedGuests ? parseInt(ceremonyData.expectedGuests) : null,
+        notes: ceremonyData.notes || null,
+        is_active: true
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("âŒ Error adding ceremony:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Ceremony added:", data)
+    return { ok: true, data }
+  } catch (err: any) {
+    console.error("âŒ Exception adding ceremony:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function loadCouples(userId: string): Promise<{ ok: boolean; data?: Couple[]; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("couples")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("âŒ Error loading couples:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Loaded", data?.length || 0, "couples")
+    return { ok: true, data: data || [] }
+  } catch (err: any) {
+    console.error("âŒ Exception loading couples:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function updateCouple(coupleId: number, updates: Partial<Couple>): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("couples")
+      .update(updates)
+      .eq("id", coupleId)
+
+    if (error) {
+      console.error("âŒ Error updating couple:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Couple updated:", coupleId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("âŒ Exception updating couple:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+// ============================================
+// TASKS (per couple)
+// ============================================
+
+export async function loadTasks(userId: string, coupleId: number): Promise<{ ok: boolean; data?: Task[]; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("couple_id", coupleId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("âŒ Error loading tasks:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Loaded", data?.length || 0, "tasks for couple", coupleId)
+    return { ok: true, data: data || [] }
+  } catch (err: any) {
+    console.error("âŒ Exception loading tasks:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function addTask(userId: string, coupleId: number, taskData: {
+  task: string
+  dueDate?: string
+  dueTime?: string
+  priority?: string
+  category?: string
+  details?: string
+}): Promise<{ ok: boolean; data?: Task; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        user_id: userId,
+        couple_id: coupleId,
+        task: taskData.task,
+        completed: false,
+        due_date: taskData.dueDate || null,
+        due_time: taskData.dueTime || null,
+        priority: taskData.priority || "medium",
+        category: taskData.category || null,
+        details: taskData.details || null
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("âŒ Error adding task:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Task added:", data)
+    return { ok: true, data }
+  } catch (err: any) {
+    console.error("âŒ Exception adding task:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function updateTask(taskId: number, updates: Partial<Task>): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("tasks")
+      .update(updates)
+      .eq("id", taskId)
+
+    if (error) {
+      console.error("âŒ Error updating task:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Task updated:", taskId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("âŒ Exception updating task:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function deleteTask(taskId: number): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("tasks")
+      .delete()
+      .eq("id", taskId)
+
+    if (error) {
+      console.error("âŒ Error deleting task:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Task deleted:", taskId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("âŒ Exception deleting task:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+// ============================================
+// MEETINGS (per couple)
+// ============================================
+
+export async function loadMeetings(userId: string, coupleId: number): Promise<{ ok: boolean; data?: Meeting[]; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("meetings")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("couple_id", coupleId)
+      .order("date", { ascending: true })
+
+    if (error) {
+      console.error("âŒ Error loading meetings:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Loaded", data?.length || 0, "meetings for couple", coupleId)
+    return { ok: true, data: data || [] }
+  } catch (err: any) {
+    console.error("âŒ Exception loading meetings:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function addMeeting(userId: string, coupleId: number, meetingData: {
+  subject: string
+  date: string
+  time: string
+  duration?: number
+  meetingType?: string
+  location?: string
+  notes?: string
+}): Promise<{ ok: boolean; data?: Meeting; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("meetings")
+      .insert({
+        user_id: userId,
+        couple_id: coupleId,
+        subject: meetingData.subject,
+        date: meetingData.date,
+        time: meetingData.time,
+        duration: meetingData.duration || 60,
+        meeting_type: meetingData.meetingType || "in-person",
+        location: meetingData.location || null,
+        notes: meetingData.notes || null,
+        status: "scheduled"
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("âŒ Error adding meeting:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Meeting added:", data)
+    return { ok: true, data }
+  } catch (err: any) {
+    console.error("âŒ Exception adding meeting:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function updateMeeting(meetingId: number, updates: Partial<Meeting>): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("meetings")
+      .update(updates)
+      .eq("id", meetingId)
+
+    if (error) {
+      console.error("âŒ Error updating meeting:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Meeting updated:", meetingId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("âŒ Exception updating meeting:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function deleteMeeting(meetingId: number): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("meetings")
+      .delete()
+      .eq("id", meetingId)
+
+    if (error) {
+      console.error("âŒ Error deleting meeting:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Meeting deleted:", meetingId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("âŒ Exception deleting meeting:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+// ============================================
+// FILES (per couple)
+// ============================================
+
+export async function loadFiles(userId: string, coupleId: number): Promise<{ ok: boolean; data?: CoupleFile[]; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("couple_files")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("couple_id", coupleId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("âŒ Error loading files:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Loaded", data?.length || 0, "files for couple", coupleId)
+    return { ok: true, data: data || [] }
+  } catch (err: any) {
+    console.error("âŒ Exception loading files:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function addFile(userId: string, coupleId: number, fileData: {
+  fileName: string
+  fileUrl: string
+  fileType?: string
+  fileSize?: number
+  category?: string
+}): Promise<{ ok: boolean; data?: CoupleFile; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("couple_files")
+      .insert({
+        user_id: userId,
+        couple_id: coupleId,
+        file_name: fileData.fileName,
+        file_url: fileData.fileUrl,
+        file_type: fileData.fileType || null,
+        file_size: fileData.fileSize || null,
+        category: fileData.category || null
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("âŒ Error adding file:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… File added:", data)
+    return { ok: true, data }
+  } catch (err: any) {
+    console.error("âŒ Exception adding file:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function deleteFile(fileId: number): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("couple_files")
+      .delete()
+      .eq("id", fileId)
+
+    if (error) {
+      console.error("âŒ Error deleting file:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… File deleted:", fileId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("âŒ Exception deleting file:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+// ============================================
+// CONTRACTS (per couple)
+// ============================================
+
+export async function loadContracts(userId: string, coupleId: number): Promise<{ ok: boolean; data?: Contract[]; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("contracts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("couple_id", coupleId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("âŒ Error loading contracts:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Loaded", data?.length || 0, "contracts for couple", coupleId)
+    return { ok: true, data: data || [] }
+  } catch (err: any) {
+    console.error("âŒ Exception loading contracts:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function addContract(userId: string, coupleId: number, contractData: {
+  name: string
+  fileUrl?: string
+  status?: string
+}): Promise<{ ok: boolean; data?: Contract; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("contracts")
+      .insert({
+        user_id: userId,
+        couple_id: coupleId,
+        name: contractData.name,
+        file_url: contractData.fileUrl || null,
+        status: contractData.status || "draft"
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("âŒ Error adding contract:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Contract added:", data)
+    return { ok: true, data }
+  } catch (err: any) {
+    console.error("âŒ Exception adding contract:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function updateContract(contractId: number, updates: Partial<Contract>): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("contracts")
+      .update(updates)
+      .eq("id", contractId)
+
+    if (error) {
+      console.error("âŒ Error updating contract:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Contract updated:", contractId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("âŒ Exception updating contract:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+// ============================================
+// PAYMENTS (per couple)
+// ============================================
+
+export async function loadPayments(userId: string, coupleId: number): Promise<{ ok: boolean; data?: Payment[]; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("couple_id", coupleId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("âŒ Error loading payments:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Loaded", data?.length || 0, "payments for couple", coupleId)
+    return { ok: true, data: data || [] }
+  } catch (err: any) {
+    console.error("âŒ Exception loading payments:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function addPayment(userId: string, coupleId: number, paymentData: {
+  description: string
+  amount: number
+  paymentType?: string
+  status?: string
+  dueDate?: string
+}): Promise<{ ok: boolean; data?: Payment; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("payments")
+      .insert({
+        user_id: userId,
+        couple_id: coupleId,
+        description: paymentData.description,
+        amount: paymentData.amount,
+        payment_type: paymentData.paymentType || "service",
+        status: paymentData.status || "pending",
+        due_date: paymentData.dueDate || null
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("âŒ Error adding payment:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Payment added:", data)
+    return { ok: true, data }
+  } catch (err: any) {
+    console.error("âŒ Exception adding payment:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function updatePayment(paymentId: number, updates: Partial<Payment>): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("payments")
+      .update(updates)
+      .eq("id", paymentId)
+
+    if (error) {
+      console.error("âŒ Error updating payment:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("âœ… Payment updated:", paymentId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("âŒ Exception updating payment:", err)
+    return { ok: false, error: err.message }
+  }
+}
