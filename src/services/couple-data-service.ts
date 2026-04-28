@@ -651,3 +651,153 @@ export async function updatePayment(paymentId: number, updates: Partial<Payment>
     return { ok: false, error: err.message }
   }
 }
+
+// ============================================
+// SCRIPTS (per officiant, optionally per couple)
+// ============================================
+
+export interface Script {
+  id: number
+  user_id: string
+  couple_id?: number | null
+  title: string
+  type: string
+  status: string
+  content: string
+  description?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export async function loadScripts(userId: string, coupleId?: number): Promise<{ ok: boolean; data?: Script[]; error?: string }> {
+  try {
+    let query = supabase
+      .from("scripts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+
+    // If coupleId is provided, filter by it (or null for templates)
+    if (coupleId !== undefined) {
+      query = query.or(`couple_id.eq.${coupleId},couple_id.is.null`)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("❌ Error loading scripts:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("✅ Loaded", data?.length || 0, "scripts")
+    return { ok: true, data: data || [] }
+  } catch (err: any) {
+    console.error("❌ Exception loading scripts:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function addScript(userId: string, scriptData: {
+  title: string
+  type: string
+  status: string
+  content: string
+  description?: string
+  coupleId?: number | null
+}): Promise<{ ok: boolean; data?: Script; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("scripts")
+      .insert({
+        user_id: userId,
+        couple_id: scriptData.coupleId || null,
+        title: scriptData.title,
+        type: scriptData.type,
+        status: scriptData.status,
+        content: scriptData.content,
+        description: scriptData.description || null
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("❌ Error adding script:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("✅ Script added:", data)
+    return { ok: true, data }
+  } catch (err: any) {
+    console.error("❌ Exception adding script:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function updateScript(scriptId: number, updates: Partial<Script>): Promise<{ ok: boolean; data?: Script; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("scripts")
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", scriptId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("❌ Error updating script:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("✅ Script updated:", scriptId)
+    return { ok: true, data }
+  } catch (err: any) {
+    console.error("❌ Exception updating script:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function deleteScript(scriptId: number): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("scripts")
+      .delete()
+      .eq("id", scriptId)
+
+    if (error) {
+      console.error("❌ Error deleting script:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("✅ Script deleted:", scriptId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("❌ Exception deleting script:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+// Auto-save script (debounced save for editor)
+export async function autoSaveScript(scriptId: number, content: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("scripts")
+      .update({
+        content: content,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", scriptId)
+
+    if (error) {
+      console.error("❌ Error auto-saving script:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("✅ Script auto-saved:", scriptId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("❌ Exception auto-saving script:", err)
+    return { ok: false, error: err.message }
+  }
+}

@@ -1,49 +1,51 @@
 # OrdainedPro Portal - Task Tracker
 
-## Current Status (v405)
+## Current Status (v407)
 - ✅ Portal running and working
 - ✅ Email sender updated to info@ordainedpro.com
-- ✅ Marketplace schema created (SAFE-MARKETPLACE-SCHEMA.sql)
 - ✅ Outbound emails working (sending via Resend)
-- ✅ Inbound email webhook FIXED (now fetches content from Resend API)
-- ✅ Auto-refresh for messages (real-time + 30s polling fallback)
-- ✅ **Code synced to GitHub** - Netlify deploys automatically from `main` branch
-- ✅ **Server-side storage for ceremonies** (couple-data-service.ts)
-- ✅ **Split component modules uploaded** (Apr 25, 2026)
-- ✅ **Couple-Specific Data Implementation** (Apr 26, 2026)
-- ✅ **TypeScript errors fixed** (Apr 28, 2026)
-- ✅ **GitHub Desktop + PowerShell sync working**
+- ✅ Inbound email webhook working
+- ✅ Meeting invite emails FIXED (was using localhost:5000)
+- ✅ **GitHub sync working** (GitHub Desktop + PowerShell)
+- ✅ **Couple-Specific Data** - All menu items isolated per couple
+- ✅ **Scripts migrated to server-side** (Apr 28, 2026)
 
-## Couple-Specific Data
-All menu items now isolate data per couple:
+## Server-Side Storage Migration Status
 
-| Menu Item | Status | Database Table |
-|-----------|--------|----------------|
-| Messages | ✅ Working | `messages` |
-| Tasks | ✅ Implemented | `tasks` |
-| Files | ✅ Implemented | `couple_files` |
-| Schedule/Meetings | ✅ Implemented | `meetings` |
-| Contracts | ✅ Implemented | `contracts` |
-| Payments | ✅ Implemented | `payments` |
-| Scripts | ⏭️ Officiant-level | (not per couple) |
+### ✅ COMPLETED - Now using Supabase:
+| Item | Table | Status |
+|------|-------|--------|
+| Messages | `messages` | ✅ Done |
+| Tasks | `tasks` | ✅ Done |
+| Files | `couple_files` | ✅ Done |
+| Meetings | `meetings` | ✅ Done |
+| Contracts | `contracts` | ✅ Done |
+| Payments | `payments` | ✅ Done |
+| **Scripts** | `scripts` | ✅ Done (Apr 28) |
+
+### ⏳ STILL USING localStorage - Need Migration:
+| Item | File(s) | Priority |
+|------|---------|----------|
+| Ceremony Details Form | `CeremonyDetailsForm.tsx`, `AddTaskDialog.tsx` | Medium |
+| Officiant Documents | `OfficiantDashboardDialog.tsx` | Medium |
+| Public Profile | `OfficiantPublicProfile.tsx` | Low |
+
+## Before Pushing - Run This SQL
+
+**IMPORTANT:** Run `.same/SCRIPTS-TABLE-SCHEMA.sql` in Supabase SQL Editor before deploying!
+
+This creates the `scripts` table with:
+- `id`, `user_id`, `couple_id`, `title`, `type`, `status`, `content`, `description`
+- Row Level Security policies
+- Proper indexes
 
 ## Deployment Status
 - **GitHub Repo:** danieljosephsalerno-ai/ordainedpro-officiant-portal
-- **Netlify:** Connected to GitHub - deploys automatically on push to `main`
+- **Netlify:** Auto-deploys from GitHub `main` branch
 - **Live Site:** portal.ordainedpro.com
-- **Same.new:** ✅ Version 405
-
-## Potential Next Tasks
-- [ ] Test couple switching with live data
-- [ ] Improve login page design (add branding)
-- [ ] Add "Forgot Password" functionality
-- [ ] Implement subscription tiers (when ready)
-- [ ] Add more script templates
-- [ ] Deploy marketplace integration
-- [ ] Add analytics/reporting dashboard
+- **Same.new:** Version 407
 
 ## Notes
 - TypeScript `any` warnings don't block build (CI=false)
-- Scripts section is officiant-level (shared across all couples)
-- Real-time updates work via Supabase subscriptions
-- Hydration warning is normal for SSR apps
+- Scripts are per-officiant (optionally linked to couple)
+- Auto-save now saves to database instead of localStorage

@@ -27,7 +27,12 @@ import {
   updateContract as updateContractInDB,
   loadPayments as loadPaymentsFromDB,
   addPayment as addPaymentToDB,
-  updatePayment as updatePaymentInDB
+  updatePayment as updatePaymentInDB,
+  loadScripts as loadScriptsFromDB,
+  addScript as addScriptToDB,
+  updateScript as updateScriptInDB,
+  deleteScript as deleteScriptFromDB,
+  autoSaveScript as autoSaveScriptToDB
 } from "@/services/couple-data-service"
 import { PortalHeader } from "./communication-portal/CeremoniesCouples/PortalHeader"
 import { PortalOverview } from "./communication-portal/CeremoniesCouples/PortalOverview"
@@ -896,6 +901,47 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     loadPaymentsForCouple()
   }, [loadPaymentsForCouple])
 
+  // Load scripts when user changes
+  const [isLoadingScripts, setIsLoadingScripts] = useState(false)
+
+  const loadScriptsForUser = useCallback(async () => {
+    if (!currentUser?.id) return
+
+    setIsLoadingScripts(true)
+    console.log("📜 Loading scripts for user:", currentUser.id)
+
+    const result = await loadScriptsFromDB(currentUser.id, editCoupleInfo?.id)
+
+    if (result.ok && result.data) {
+      // Transform database format to component format
+      const transformedScripts = result.data.map((s: any) => ({
+        id: s.id,
+        title: s.title,
+        type: s.type,
+        status: s.status,
+        content: s.content,
+        description: s.description || '',
+        lastModified: s.updated_at ? new Date(s.updated_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }) : '',
+        coupleId: s.couple_id
+      }))
+      setCoupleScripts(transformedScripts)
+      console.log("✅ Loaded", transformedScripts.length, "scripts from database")
+    } else {
+      console.log("📭 No scripts found or error")
+      // Keep default demo scripts if no database scripts
+    }
+
+    setIsLoadingScripts(false)
+  }, [currentUser?.id, editCoupleInfo?.id])
+
+  useEffect(() => {
+    loadScriptsForUser()
+  }, [loadScriptsForUser])
+
   // Script Management States
   const [showScriptEditorDialog, setShowScriptEditorDialog] = useState(false)
   const [showScriptViewerDialog, setShowScriptViewerDialog] = useState(false)
@@ -1601,7 +1647,7 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
     }
   }
 
-  const autoSave = () => {
+  const autoSave = async () => {
     if (editingScript) {
       // Get the current content from the editor element to ensure we have the latest formatted content
       const editorElement = editorRef.current || document.getElementById('script-editor') as HTMLDivElement
@@ -1614,13 +1660,21 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
 
       if (currentContent.trim()) {
         const timestamp = new Date().toLocaleTimeString()
-        // Auto-save with formatting preserved
 
-        localStorage.setItem(`script_${editingScript.id}`, currentContent)
-        localStorage.setItem(`script_${editingScript.id}_autosave_time`, timestamp)
-
-        console.log(`Auto-saved "${editingScript.title}" with formatting at ${timestamp}`)
-        alert(`💾 Auto-saved "${editingScript.title}" with formatting at ${timestamp}`)
+        // Auto-save to database
+        if (editingScript.id && typeof editingScript.id === 'number') {
+          const result = await autoSaveScriptToDB(editingScript.id, currentContent)
+          if (result.ok) {
+            console.log(`Auto-saved "${editingScript.title}" to database at ${timestamp}`)
+            alert(`💾 Auto-saved "${editingScript.title}" to server at ${timestamp}`)
+          } else {
+            console.error("Failed to auto-save to database:", result.error)
+            alert(`⚠️ Failed to auto-save to server. Please try again.`)
+          }
+        } else {
+          // New script - need to save first
+          alert('Please save the script first before auto-saving.')
+        }
       } else {
         alert('Nothing to auto-save - script is empty!')
       }
@@ -1706,10 +1760,8 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
   const handleEditScript = (script: any) => {
     setEditingScript(script)
 
-    // Check for auto-saved content first, then backup, then original content
-    const autoSavedContent = localStorage.getItem(`script_${script.id}`)
-    const backupContent = localStorage.getItem(`script_${script.id}_backup`)
-    let content = autoSavedContent || backupContent || script.content
+    // Load content from the script object (which comes from database)
+    let content = script.content || ''
 
     // Preserve content exactly as saved - no processing to maintain formatting
     // Only convert plain text line breaks if the content has NO HTML tags at all
@@ -1727,17 +1779,14 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
 
     // Show notification and debug info
     console.log('handleEditScript - Loading content for:', script.title)
-    console.log('Content sources:', {
-      autoSaved: !!autoSavedContent,
-      backup: !!backupContent,
-      original: !!script.content,
-      finalContent: content?.substring(0, 100) + (content?.length > 100 ? '...' : '')
+    console.log('Content loaded from database:', {
+      scriptId: script.id,
+      contentLength: content?.length || 0,
+      preview: content?.substring(0, 100) + (content?.length > 100 ? '...' : '')
     })
 
-    if (autoSavedContent) {
-      console.log('Loading auto-saved content for script:', script.title)
-    } else if (backupContent) {
-      console.log('Loading backup content for script:', script.title)
+    if (script.content) {
+      console.log('Loading content for script:', script.title)
     }
 
     // Switch to Script Editor tab instead of opening dialog
@@ -2024,124 +2073,125 @@ Pastor Michael Adams`,
     setShowShareScriptDialog(true)
   }
 
-  const handleSaveScript = () => {
-    if (editingScript) {
-      // Check if this is a new script or existing script (before any updates)
-      const isNewScript = !coupleScripts.find(script => script.id === editingScript.id)
+  const handleSaveScript = async () => {
+    if (!editingScript || !currentUser?.id) return
 
-      // Get the current content from the editor element to ensure we have the latest formatted content
-      const editorElement = editorRef.current || document.getElementById('script-editor') as HTMLDivElement
-      let currentContent = scriptContent
+    // Check if this is a new script or existing script (before any updates)
+    const isNewScript = !coupleScripts.find(script => script.id === editingScript.id) &&
+                        typeof editingScript.id !== 'number'
 
-      console.log('Save Script Debug:', {
-        isNewScript,
-        editingScriptId: editingScript.id,
-        existingScripts: coupleScripts.map(s => s.id),
-        editorFound: !!editorElement
+    // Get the current content from the editor element to ensure we have the latest formatted content
+    const editorElement = editorRef.current || document.getElementById('script-editor') as HTMLDivElement
+    let currentContent = scriptContent
+
+    console.log('Save Script Debug:', {
+      isNewScript,
+      editingScriptId: editingScript.id,
+      existingScripts: coupleScripts.map(s => s.id),
+      editorFound: !!editorElement
+    })
+
+    if (editorElement) {
+      currentContent = editorElement.innerHTML
+      console.log('Content from editor element:', {
+        length: currentContent.length,
+        preview: currentContent.substring(0, 100) + '...',
+        isEmpty: currentContent.trim() === ''
       })
+      setScriptContent(currentContent) // Update state with current editor content
+    } else {
+      console.error('Editor element not found during save!')
+    }
 
-      if (editorElement) {
-        currentContent = editorElement.innerHTML
-        console.log('Content from editor element:', {
-          length: currentContent.length,
-          preview: currentContent.substring(0, 100) + '...',
-          isEmpty: currentContent.trim() === ''
-        })
-        setScriptContent(currentContent) // Update state with current editor content
-      } else {
-        console.error('Editor element not found during save!')
-      }
+    // Keep HTML formatting when saving to preserve bold, italic, colors, etc.
+    const plainTextContent = currentContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
 
-      // Keep HTML formatting when saving to preserve bold, italic, colors, etc.
-      const plainTextContent = currentContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+    console.log('Save validation:', {
+      htmlLength: currentContent.length,
+      plainTextLength: plainTextContent.length,
+      preview: plainTextContent.substring(0, 50) + '...'
+    })
 
-      console.log('Save validation:', {
-        htmlLength: currentContent.length,
-        plainTextLength: plainTextContent.length,
-        preview: plainTextContent.substring(0, 50) + '...'
-      })
+    // Character validation
+    const MIN_CHARACTERS = 50
+    const MAX_CHARACTERS = 50000 // Increased for database storage
 
-      // Character validation
-      const MIN_CHARACTERS = 50
-      const MAX_CHARACTERS = 7000
+    if (plainTextContent.length < MIN_CHARACTERS) {
+      alert(`❌ Script must be at least ${MIN_CHARACTERS} characters long.\n\nCurrent length: ${plainTextContent.length} characters\nPlease add more content before saving.`)
+      return
+    }
 
-      if (plainTextContent.length < MIN_CHARACTERS) {
-        alert(`❌ Script must be at least ${MIN_CHARACTERS} characters long.\n\nCurrent length: ${plainTextContent.length} characters\nPlease add more content before saving.`)
-        return
-      }
+    if (plainTextContent.length > MAX_CHARACTERS) {
+      alert(`❌ Script cannot exceed ${MAX_CHARACTERS} characters.\n\nCurrent length: ${plainTextContent.length} characters\nPlease reduce the content before saving.`)
+      return
+    }
 
-      if (plainTextContent.length > MAX_CHARACTERS) {
-        alert(`❌ Script cannot exceed ${MAX_CHARACTERS} characters.\n\nCurrent length: ${plainTextContent.length} characters\nPlease reduce the content before saving.`)
-        return
-      }
+    // Get the current date for last modified
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
 
-      // In a real app, this would save to the backend
-      console.log('Saving script with preserved formatting:', {
-        id: editingScript.id,
-        title: editingScript.title,
-        content: currentContent,
-        lastModified: new Date().toLocaleDateString()
-      })
-
-      // Get the current date for last modified
-      const currentDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-
-      // Check if this is a new script or existing script
-      const existingScript = coupleScripts.find(script => script.id === editingScript.id)
-
-      if (existingScript) {
-        // Update existing script
-        setCoupleScripts(prevScripts =>
-          prevScripts.map(script =>
-            script.id === editingScript.id
-              ? {
-                  ...script,
-                  content: currentContent, // Save with exact HTML formatting preserved
-                  lastModified: currentDate,
-                  status: "Latest Draft" // Update status when saved
-                }
-              : script
-          )
-        )
-        console.log('Updated existing script:', editingScript.title)
-      } else {
-        // Add new script to the array
-        const newScript = {
-          ...editingScript,
+    try {
+      if (isNewScript) {
+        // Create new script in database
+        const result = await addScriptToDB(currentUser.id, {
+          title: editingScript.title || `New Script ${currentDate}`,
+          type: editingScript.type || 'Traditional',
+          status: 'Latest Draft',
           content: currentContent,
-          lastModified: currentDate,
-          status: "Latest Draft"
-        }
+          description: editingScript.description || '',
+          coupleId: editCoupleInfo?.id || null
+        })
 
-        setCoupleScripts(prevScripts => [newScript, ...prevScripts])
-        console.log('Added new script:', editingScript.title)
+        if (result.ok && result.data) {
+          // Add to local state with database ID
+          const newScript = {
+            ...result.data,
+            lastModified: currentDate
+          }
+          setCoupleScripts(prevScripts => [newScript, ...prevScripts])
+          console.log('✅ New script created in database:', result.data.id)
+          alert(`✅ Script "${editingScript.title}" created successfully!\n\nSaved to server on: ${currentDate}\nContent: ${plainTextContent.length} characters`)
+        } else {
+          throw new Error(result.error || 'Failed to create script')
+        }
+      } else {
+        // Update existing script in database
+        const result = await updateScriptInDB(editingScript.id, {
+          content: currentContent,
+          status: 'Latest Draft'
+        })
+
+        if (result.ok) {
+          // Update local state
+          setCoupleScripts(prevScripts =>
+            prevScripts.map(script =>
+              script.id === editingScript.id
+                ? {
+                    ...script,
+                    content: currentContent,
+                    lastModified: currentDate,
+                    status: 'Latest Draft'
+                  }
+                : script
+            )
+          )
+          console.log('✅ Script updated in database:', editingScript.id)
+          alert(`✅ Script "${editingScript.title}" saved successfully!\n\nSaved to server on: ${currentDate}\nContent: ${plainTextContent.length} characters`)
+        } else {
+          throw new Error(result.error || 'Failed to update script')
+        }
       }
 
-      // Also save to localStorage as backup with exact content
-      localStorage.setItem(`script_${editingScript.id}_backup`, currentContent)
-      localStorage.setItem(`script_${editingScript.id}_saved_date`, currentDate)
-
-      // Clear auto-saved content since we've saved it properly
-      localStorage.removeItem(`script_${editingScript.id}`)
-
-      console.log('Script saved successfully with formatting preserved:', {
-        id: editingScript.id,
-        title: editingScript.title,
-        contentLength: plainTextContent.length,
-        lastModified: currentDate,
-        htmlPreview: currentContent.substring(0, 100) + '...'
-      })
-
-      const actionText = isNewScript ? 'created' : 'saved'
-      alert(`✅ Script "${editingScript.title}" ${actionText} successfully!\n\nSaved on: ${currentDate}\nContent: ${plainTextContent.length} characters\nFormatting preserved!`)
       setShowScriptEditorDialog(false)
       setEditingScript(null)
       setScriptContent("")
       setEditorFontSize(16)
+    } catch (err: any) {
+      console.error('❌ Error saving script:', err)
+      alert(`⚠️ Failed to save script to server.\n\nError: ${err.message}\n\nPlease try again.`)
     }
   }
 
@@ -2490,10 +2540,13 @@ pastor.michael@ordainedpro.com`
   })
   const [uploadingScript, setUploadingScript] = useState(false)
 
-  // Sarah & David's Script Drafts State
-  const [coupleScripts, setCoupleScripts] = useState([
+  // Scripts are now loaded from database
+  const [coupleScripts, setCoupleScripts] = useState<any[]>([])
+
+  // Demo scripts for marketplace (not editable)
+  const demoScriptsForMarketplace = [
     {
-      id: 1,
+      id: 'demo-1',
       title: "Traditional Ceremony Script v3",
       type: "Traditional",
       status: "Latest Draft",
@@ -2617,7 +2670,7 @@ PRONOUNCEMENT
 ---
 Note: This is an initial draft. Further development needed to incorporate specific cultural and religious elements from both Sarah's and David's backgrounds.`
     }
-  ])
+  ]
 
   const myScripts = [
     {

@@ -857,13 +857,8 @@ export function BuildScriptTab() {
                                 const target = e.target as HTMLDivElement
                                 const newContent = target.innerHTML
                                 setScriptContent(newContent)
-
-                                // Auto-save on blur
-                                if (editingScript && newContent.trim()) {
-                                  localStorage.setItem(`script_${editingScript.id}`, newContent)
-                                  const timestamp = new Date().toLocaleString()
-                                  localStorage.setItem(`script_${editingScript.id}_autosave_time`, timestamp)
-                                }
+                                // Content is saved when user clicks Save button
+                                // Auto-save is triggered via the Auto-Save button in toolbar
                               }}
                             />
                             {scriptContent === '' && (

@@ -236,14 +236,8 @@ export function PortalScriptEditorDialog() {
                   })
 
                   setScriptContent(newContent)
-
-                  // Auto-save on blur to prevent content loss
-                  if (editingScript && newContent.trim()) {
-                    localStorage.setItem(`script_${editingScript.id}`, newContent)
-                    const timestamp = new Date().toLocaleString()
-                    localStorage.setItem(`script_${editingScript.id}_autosave_time`, timestamp)
-                    console.log('Auto-saved to localStorage:', newContent.length, 'characters')
-                  }
+                  // Content is saved when user clicks Save button
+                  // Auto-save is triggered via the Auto-Save button in toolbar
                 }}
               />
               {scriptContent === '' && (
