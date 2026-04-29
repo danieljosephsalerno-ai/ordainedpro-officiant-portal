@@ -94,7 +94,7 @@ export function PortalScriptViewerDialog() {
           {/* Action Buttons */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="text-sm text-gray-500">
-              Script for {editCoupleInfo.brideName} & {editCoupleInfo.groomName}
+              Script for {editCoupleInfo?.brideName || 'Partner 1'} & {editCoupleInfo?.groomName || 'Partner 2'}
             </div>
             <div className="flex space-x-3">
               <Button
