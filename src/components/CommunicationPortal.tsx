@@ -3506,30 +3506,56 @@ Note: This is an initial draft. Further development needed to incorporate specif
         continue
       }
 
-      // Save to database
-      const result = await addFileToDB(currentUser.id, editCoupleInfo.id, {
-        fileName: file.name,
-        fileUrl: file.url || "#",
-        fileType: file.type,
-        fileSize: file.size,
-        category: "Uploaded"
-      })
+      try {
+        // Upload file to Supabase Storage
+        const fileExt = file.name.split('.').pop()
+        const filePath = `${currentUser.id}/${editCoupleInfo.id}/${Date.now()}-${file.name}`
 
-      if (result.ok && result.data) {
-        // Add to local state
-        const newFile = {
-          id: result.data.id,
-          name: file.name,
-          size: formatFileSize(file.size),
-          uploadedBy: officiantProfile?.name || "Officiant",
-          date: new Date().toLocaleDateString(),
-          type: file.type,
-          url: file.url || "#"
+        const { error: uploadError } = await supabase.storage
+          .from('couple-files')
+          .upload(filePath, file.file, { upsert: true })
+
+        if (uploadError) {
+          console.error("❌ Storage upload error:", uploadError)
+          alert(`Failed to upload ${file.name}: ${uploadError.message}`)
+          continue
         }
-        setFiles(prev => [...prev, newFile])
-        console.log("✅ File saved:", file.name)
-      } else {
-        console.error("❌ Failed to save file:", file.name, result.error)
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('couple-files')
+          .getPublicUrl(filePath)
+
+        const publicUrl = urlData.publicUrl
+
+        // Save to database with real URL
+        const result = await addFileToDB(currentUser.id, editCoupleInfo.id, {
+          fileName: file.name,
+          fileUrl: publicUrl,
+          fileType: file.type,
+          fileSize: file.size,
+          category: "Uploaded"
+        })
+
+        if (result.ok && result.data) {
+          // Add to local state
+          const newFile = {
+            id: result.data.id,
+            name: file.name,
+            size: formatFileSize(file.size),
+            uploadedBy: officiantProfile?.name || "Officiant",
+            date: new Date().toLocaleDateString(),
+            type: file.type,
+            url: publicUrl
+          }
+          setFiles(prev => [...prev, newFile])
+          console.log("✅ File uploaded and saved:", file.name, publicUrl)
+        } else {
+          console.error("❌ Failed to save file to database:", file.name, result.error)
+        }
+      } catch (err: any) {
+        console.error("❌ Exception uploading file:", file.name, err)
+        alert(`Failed to upload ${file.name}: ${err.message}`)
       }
     }
   }
