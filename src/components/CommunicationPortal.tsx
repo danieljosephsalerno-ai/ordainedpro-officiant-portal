@@ -3049,50 +3049,96 @@ Note: This is an initial draft. Further development needed to incorporate specif
     }
   }
 
-  const scheduleEmailNotification = (task: Task) => {
-    // In a real application, this would make an API call to schedule the email
+  const scheduleEmailNotification = async (task: Task) => {
+    // Calculate reminder date
     const reminderDate = new Date(task.dueDate)
     reminderDate.setDate(reminderDate.getDate() - task.reminderDays)
 
-    console.log(`📧 Email notification scheduled:`)
+    console.log(`📧 Scheduling email notification:`)
     console.log(`Task: ${task.task}`)
     console.log(`Reminder Date: ${reminderDate.toDateString()}`)
     console.log(`Due: ${task.dueDate} at ${task.dueTime}`)
-    console.log(`Priority: ${task.priority}`)
 
-    // Simulate email content
-    const emailContent = generateTaskReminderEmail(task)
-    console.log("Email Content:", emailContent)
+    // Get recipients - both couple and officiant
+    const recipients = [
+      editCoupleInfo?.brideEmail,
+      editCoupleInfo?.groomEmail,
+      officiantProfile?.email || currentUser?.email
+    ].filter(Boolean)
+
+    const coupleName = `${editCoupleInfo?.brideName || 'Partner 1'} & ${editCoupleInfo?.groomName || 'Partner 2'}`
+    const officiantName = officiantProfile?.full_name || 'Your Officiant'
+
+    // Send immediate confirmation email about the task
+    for (const email of recipients) {
+      try {
+        const isOfficiant = email === officiantProfile?.email || email === currentUser?.email
+        const emailContent = generateTaskReminderEmail(task, isOfficiant, coupleName, officiantName)
+
+        const response = await fetch("/api/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: email,
+            subject: emailContent.subject,
+            message: emailContent.body,
+            fromName: officiantName
+          })
+        })
+
+        if (response.ok) {
+          console.log(`✅ Task notification sent to ${email}`)
+        } else {
+          console.error(`❌ Failed to send task notification to ${email}`)
+        }
+      } catch (err) {
+        console.error(`❌ Error sending task notification to ${email}:`, err)
+      }
+    }
+
+    // Store reminder in database for future sending
+    // TODO: Create task_reminders table and Supabase Edge Function for scheduled sends
+    console.log(`📅 Reminder scheduled for ${reminderDate.toDateString()} - Recipients: ${recipients.join(', ')}`)
   }
 
-  const generateTaskReminderEmail = (task: Task) => {
-    const priorityEmoji = {
+  const generateTaskReminderEmail = (task: Task, isOfficiant: boolean, coupleName: string, officiantName: string) => {
+    const priorityEmoji: Record<string, string> = {
       low: '🟢',
       medium: '🟡',
       high: '🟠',
       urgent: '🔴'
     }
 
+    const greeting = isOfficiant ? `Dear ${officiantName}` : `Dear ${coupleName}`
+    const closingNote = isOfficiant
+      ? `Please ensure this task is completed before the wedding date.`
+      : `Your officiant ${officiantName} has created this task for your wedding planning. Please review and complete as needed.`
+
     return {
-      to: "pastor.michael@ordainedpro.com",
-      subject: `⏰ Task Reminder: ${task.task}`,
-      body: `
-        Dear Pastor Michael,
+      subject: `📋 Wedding Task: ${task.task}`,
+      body: `${greeting},
 
-        This is a reminder for your upcoming task:
+A new task has been created for your wedding ceremony:
 
-        📋 Task: ${task.task}
-        📅 Due Date: ${new Date(task.dueDate).toLocaleDateString()} at ${task.dueTime}
-        ${priorityEmoji[task.priority]} Priority: ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-        📁 Category: ${task.category}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        ${task.details ? `Details: ${task.details}` : ''}
+📋 Task: ${task.task}
+📅 Due Date: ${new Date(task.dueDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+⏰ Due Time: ${task.dueTime}
+${priorityEmoji[task.priority] || '📌'} Priority: ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+📁 Category: ${task.category}
 
-        Don't forget to complete this task on time!
+${task.details ? `📝 Details:\n${task.details}` : ''}
 
-        Best regards,
-        OrdainedPro Task Management System
-      `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${closingNote}
+
+${isOfficiant ? '' : `If you have any questions, please contact your officiant.`}
+
+Best regards,
+OrdainedPro Wedding Portal
+`
     }
   }
 

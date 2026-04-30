@@ -102,39 +102,10 @@ export function AddTaskDialog({ onAddTask, isOpen, onOpenChange }: AddTaskDialog
     setSaving(true);
 
     try {
-      if (!user) {
-        alert("⚠️ Please sign in to save tasks.");
-        setSaving(false);
-        return;
-      }
+      // Use the parent's onAddTask handler which properly saves to database
+      // with the correct couple context
+      console.log("📋 Submitting task via parent handler:", formData);
 
-      console.log("👤 Saving task for user:", user);
-      const userId = user.id; // ✅ UUID
-
-      // Couple ID fallback
-      let coupleId = 1;
-      const savedRaw = localStorage.getItem("ceremonyDetails");
-      if (savedRaw) {
-        try {
-          const savedData = JSON.parse(savedRaw);
-          coupleId = savedData.coupleId || 1;
-        } catch { }
-      }
-
-      const newTaskData = {
-        couple_id: coupleId,
-        user_id: userId,
-        title: formData.task,
-        description: formData.details || null,
-        due_date: `${formData.dueDate}T${formData.dueTime}`,
-        completed: false,
-      };
-
-      const { data, error } = await supabase.from("tasks").insert(newTaskData).select().single();
-      if (error) throw error;
-
-      console.log("✅ Task created:", data);
-      alert("✅ Task saved successfully!");
       onAddTask({ ...formData, completed: false });
 
       // Reset form
