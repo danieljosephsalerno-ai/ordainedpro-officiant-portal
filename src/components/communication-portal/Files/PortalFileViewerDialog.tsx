@@ -56,20 +56,42 @@ export function PortalFileViewerDialog() {
     }
 
     try {
-      const response = await fetch(viewingFile.url)
+      // Add download parameter to Supabase URL to force download
+      let downloadUrl = viewingFile.url
+      if (downloadUrl.includes('supabase.co/storage')) {
+        downloadUrl = downloadUrl.includes('?')
+          ? `${downloadUrl}&download=true`
+          : `${downloadUrl}?download=${encodeURIComponent(viewingFile.name || 'file')}`
+      }
+
+      // Create a hidden link and click it to trigger download
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = viewingFile.name || 'download'
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
+
+      // For cross-origin files, we need to fetch and create a blob
+      const response = await fetch(viewingFile.url, { mode: 'cors' })
       const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = viewingFile.name || 'download'
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      const blobUrl = window.URL.createObjectURL(blob)
+
+      link.href = blobUrl
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl)
+        document.body.removeChild(link)
+      }, 100)
     } catch (err) {
       console.error("Download error:", err)
-      // Fallback: open in new tab
-      window.open(viewingFile.url, '_blank')
+      // Fallback: use Supabase download parameter
+      const downloadUrl = viewingFile.url.includes('?')
+        ? `${viewingFile.url}&download=${encodeURIComponent(viewingFile.name || 'file')}`
+        : `${viewingFile.url}?download=${encodeURIComponent(viewingFile.name || 'file')}`
+      window.location.href = downloadUrl
     }
   }
 
