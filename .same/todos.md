@@ -1,6 +1,6 @@
 # OrdainedPro Portal - Task Tracker
 
-## Current Status (v436)
+## Current Status (v437)
 - ✅ Portal running and working
 - ✅ Email sender updated to info@ordainedpro.com
 - ✅ Outbound emails working (sending via Resend)
@@ -16,6 +16,30 @@
 - ✅ **Multiple GoTrueClient Fix v429** (Apr 29, 2026)
 - ✅ **TypeScript Fix v435 - Supabase singleton type safety** (Apr 29, 2026)
 - ✅ **Null Safety Fix v436 - Comprehensive .split() and .brideName fixes** (Apr 29, 2026)
+- ✅ **RLS Security Fix v437 - Row Level Security enabled on all tables** (Apr 30, 2026)
+
+## RLS Security Fix (v437) - Row Level Security Enabled
+
+### Problem
+- Row Level Security (RLS) was disabled on database tables
+- Users could potentially access other users' data
+
+### Solution
+1. Enabled RLS on all tables via Supabase SQL Editor
+2. Verified policies exist for SELECT, INSERT, UPDATE, DELETE
+3. All tables now properly secured: tasks, meetings, couple_files, contracts, payments, scripts, couples, messages
+
+### Tables Secured
+| Table | RLS Status |
+|-------|-----------|
+| contracts | ✅ enabled |
+| couple_files | ✅ enabled |
+| couples | ✅ enabled |
+| meetings | ✅ enabled |
+| messages | ✅ enabled |
+| payments | ✅ enabled |
+| scripts | ✅ enabled |
+| tasks | ✅ enabled |
 
 ## Null Safety Fix (v436) - Comprehensive Split/BrideName Fixes
 
