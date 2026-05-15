@@ -32,9 +32,7 @@ import {
   addScript as addScriptToDB,
   updateScript as updateScriptInDB,
   deleteScript as deleteScriptFromDB,
-  autoSaveScript as autoSaveScriptToDB,
-  saveWeddingDetails as saveWeddingDetailsToDB,
-  loadWeddingDetails as loadWeddingDetailsFromDB
+  autoSaveScript as autoSaveScriptToDB
 } from "@/services/couple-data-service"
 import { PortalHeader } from "./communication-portal/CeremoniesCouples/PortalHeader"
 import { PortalOverview } from "./communication-portal/CeremoniesCouples/PortalOverview"
@@ -173,7 +171,7 @@ const generateAIResponse = (question: Question, previousResponses: Record<string
 
     `${question.question}`,
 
-    question.aiRecommendation ? `’¡ ${question.aiRecommendation}` : ''
+    question.aiRecommendation ? `ðŸ’¡ ${question.aiRecommendation}` : ''
   ].filter(Boolean)
 
   return responses.join('\n\n')
@@ -322,11 +320,12 @@ This script has been customized for your ceremony by Mr. Script. Feel free to mo
 // Props interface
 interface CommunicationPortalProps {
   onScriptUploaded?: (content: string, fileName: string) => void;
+  user?: { id: string; email: string } | null;
 }
 
-export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalProps = {}) {
-  // Auth and profile state
-  const [currentUser, setCurrentUser] = useState<any>(null)
+export function CommunicationPortal({ onScriptUploaded, user }: CommunicationPortalProps = {}) {
+  // Auth and profile state - initialize from user prop if provided
+  const [currentUser, setCurrentUser] = useState<any>(user || null)
   const [officiantProfile, setOfficiantProfile] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
   const [isSendingMessage, setIsSendingMessage] = useState(false)
@@ -548,28 +547,56 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     }
   }, [savedCeremonies])
 
+  // Sync currentUser with user prop when prop changes
+  useEffect(() => {
+    if (user && (!currentUser || currentUser.id !== user.id)) {
+      console.log("Setting currentUser from prop:", user.id)
+      setCurrentUser(user)
+    }
+  }, [user])
+
   // Load current user and officiant profile
   useEffect(() => {
     const loadUserAndProfile = async () => {
       try {
-        // Get current user session
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError || !user) {
-          console.log("No user session found")
+        // Use user prop if available, otherwise check auth
+        const userId = user?.id || currentUser?.id
+
+        if (!userId) {
+          // No user prop, try to get from auth
+          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser()
+          if (userError || !authUser) {
+            console.log("No user session found")
+            return
+          }
+          console.log("Loaded user from auth:", authUser.id)
+          setCurrentUser(authUser)
+
+          // Load profile with auth user
+          const { data: profile } = await supabase
+            .from("officiant_profiles")
+            .select("*")
+            .eq("user_id", authUser.id)
+            .single()
+
+          if (profile) {
+            console.log("Loaded profile:", profile.business_name)
+            setOfficiantProfile(profile)
+          }
           return
         }
-        console.log("âœ… Loaded user:", user.id)
-        setCurrentUser(user)
+
+        console.log("Loading profile for user:", userId)
 
         // Load officiant profile
         const { data: profile, error: profileError } = await supabase
-          .from("profiles")
+          .from("officiant_profiles")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .single()
 
         if (profile) {
-          console.log("âœ… Loaded profile:", profile.business_name)
+          console.log("Loaded profile:", profile.business_name)
           setOfficiantProfile(profile)
         }
       } catch (err) {
@@ -578,65 +605,74 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     }
 
     loadUserAndProfile()
-  }, [])
+  }, [user, currentUser?.id])
 
   // Load couples from database
   useEffect(() => {
     const loadCouples = async () => {
-      if (!currentUser?.id) return
-
-      setIsLoadingCouples(true)
-      console.log("[USERS] Loading couples for user:", currentUser.id)
-
-      const result = await loadCouplesFromDB(currentUser.id)
-
-      if (result.ok && result.data && result.data.length > 0) {
-        // Transform database format to component format
-        const transformedCouples = result.data.map((c: any, index: number) => ({
-          id: c.id, // This is the REAL database ID
-          brideName: c.bride_name || "",
-          brideEmail: c.bride_email || "",
-          bridePhone: c.bride_phone || "",
-          brideAddress: "",
-          groomName: c.groom_name || "",
-          groomEmail: c.groom_email || "",
-          groomPhone: c.groom_phone || "",
-          groomAddress: "",
-          address: c.venue_address || "",
-          emergencyContact: "",
-          specialRequests: c.notes || "",
-          isActive: c.is_active !== false,
-          colors: getCoupleColors(index + 1),
-          weddingDetails: {
-            venueName: c.venue_name || "",
-            venueAddress: c.venue_address || "",
-            weddingDate: c.wedding_date || "",
-            startTime: c.start_time || "",
-            endTime: c.end_time || "",
-            expectedGuests: c.expected_guests?.toString() || "",
-            officiantNotes: c.notes || ""
-          }
-        }))
-
-        setAllCouples(transformedCouples)
-        setEditCoupleInfo(transformedCouples[0])
-        setEditWeddingDetails(transformedCouples[0].weddingDetails || {
-          venueName: "",
-          venueAddress: "",
-          weddingDate: "",
-          startTime: "",
-          endTime: "",
-          expectedGuests: "",
-          officiantNotes: ""
-        })
-        setActiveCoupleIndex(0)
-        console.log("âœ… Loaded", transformedCouples.length, "couples from database")
-      } else {
-        console.log("[SCRIPT]­ No couples found in database")
-        setAllCouples([])
+      if (!currentUser?.id) {
+        console.log("Waiting for currentUser before loading couples...")
+        return
       }
 
-      setIsLoadingCouples(false)
+      setIsLoadingCouples(true)
+      console.log("Loading couples for user:", currentUser.id)
+
+      try {
+        const result = await loadCouplesFromDB(currentUser.id)
+
+        if (result.ok && result.data && result.data.length > 0) {
+          // Transform database format to component format
+          const transformedCouples = result.data.map((c: any, index: number) => ({
+            id: c.id, // This is the REAL database ID
+            brideName: c.bride_name || "",
+            brideEmail: c.bride_email || "",
+            bridePhone: c.bride_phone || "",
+            brideAddress: "",
+            groomName: c.groom_name || "",
+            groomEmail: c.groom_email || "",
+            groomPhone: c.groom_phone || "",
+            groomAddress: "",
+            address: c.venue_address || "",
+            emergencyContact: "",
+            specialRequests: c.notes || "",
+            isActive: c.is_active !== false,
+            colors: getCoupleColors(index + 1),
+            weddingDetails: {
+              venueName: c.venue_name || "",
+              venueAddress: c.venue_address || "",
+              weddingDate: c.wedding_date || "",
+              startTime: c.start_time || "",
+              endTime: c.end_time || "",
+              expectedGuests: c.expected_guests?.toString() || "",
+              officiantNotes: c.notes || ""
+            }
+          }))
+
+          setAllCouples(transformedCouples)
+          setEditCoupleInfo(transformedCouples[0])
+          setEditWeddingDetails(transformedCouples[0].weddingDetails || {
+            venueName: "",
+            venueAddress: "",
+            weddingDate: "",
+            startTime: "",
+            endTime: "",
+            expectedGuests: "",
+            officiantNotes: ""
+          })
+          setActiveCoupleIndex(0)
+          console.log("Loaded", transformedCouples.length, "couples from database")
+        } else {
+          console.log("No couples found in database")
+          setAllCouples([])
+        }
+      } catch (error) {
+        console.error("Error loading couples:", error)
+        setAllCouples([])
+      } finally {
+        // Always set loading to false when done
+        setIsLoadingCouples(false)
+      }
     }
 
     loadCouples()
@@ -859,7 +895,7 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
     if (!currentUser?.id || !editCoupleInfo?.id) return
 
     setIsLoadingPayments(true)
-    console.log("’° Loading payments for couple:", editCoupleInfo.id)
+    console.log("ðŸ’° Loading payments for couple:", editCoupleInfo.id)
 
     const result = await loadPaymentsFromDB(currentUser.id, editCoupleInfo.id)
 
@@ -917,7 +953,10 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
   const [isLoadingScripts, setIsLoadingScripts] = useState(false)
 
   const loadScriptsForUser = useCallback(async () => {
-    if (!currentUser?.id) return
+    if (!currentUser?.id) {
+        console.log("Waiting for currentUser before loading couples...")
+        return
+      }
 
     setIsLoadingScripts(true)
     console.log("[SCRIPT]œ Loading scripts for user:", currentUser.id)
@@ -1044,10 +1083,10 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
 
   const getEventTypeIcon = (type: string) => {
     switch (type) {
-      case 'meeting': return '[HANDSHAKE]'
+      case 'meeting': return 'ðŸ¤'
       case 'task': return 'âœ…'
       case 'rehearsal': return '[STYLE]'
-      case 'ceremony': return '’’'
+      case 'ceremony': return 'ðŸ’’'
       case 'preparation': return '[WARNING]™ï¸'
       case 'follow-up': return '[SCRIPT]ž'
       default: return '[SCRIPT]…'
@@ -1407,7 +1446,7 @@ Mr. Script - Your Personal Wedding Script Creator`
       const scriptGeneratedMessage: ChatMessage = {
         id: `ai-script-generated-${Date.now()}`,
         type: 'ai',
-        content: `[CELEBRATE] **Your ceremony script has been generated!**
+        content: `ðŸŽ‰ **Your ceremony script has been generated!**
 
 I've created a beautiful ${userResponses['ceremony-type'] || selectedCeremonyStyle} ceremony script for ${editCoupleInfo?.brideName || 'Partner 1'} & ${editCoupleInfo?.groomName || 'Partner 2'}.
 
@@ -1678,7 +1717,7 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
           const result = await autoSaveScriptToDB(editingScript.id, currentContent)
           if (result.ok) {
             console.log(`Auto-saved "${editingScript.title}" to database at ${timestamp}`)
-            alert(`’¾ Auto-saved "${editingScript.title}" to server at ${timestamp}`)
+            alert(`ðŸ’¾ Auto-saved "${editingScript.title}" to server at ${timestamp}`)
           } else {
             console.error("Failed to auto-save to database:", result.error)
             alert(`[WARNING] ï¸ Failed to auto-save to server. Please try again.`)
@@ -1882,7 +1921,7 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
       return
     }
 
-    console.log("’° Recording payment for couple:", editCoupleInfo.id)
+    console.log("ðŸ’° Recording payment for couple:", editCoupleInfo.id)
 
     // Save to database
     const result = await addPaymentToDB(currentUser.id, editCoupleInfo.id, {
@@ -1931,7 +1970,7 @@ Based on these selections, I'll create a beautiful ceremony for ${editCoupleInfo
       // Show success message
       console.log("âœ… Payment recorded:", payment)
       if (newBalance === 0) {
-        alert("Payment recorded successfully! This ceremony is now PAID IN FULL! [CELEBRATE]")
+        alert("Payment recorded successfully! This ceremony is now PAID IN FULL! ðŸŽ‰")
       } else {
         alert(`Payment of ${amount} recorded successfully!\n\nRemaining balance: ${newBalance}`)
       }
@@ -2234,17 +2273,10 @@ Pastor Michael Adams`,
     }
   }
 
-  const handleSendScript = async () => {
+  const handleSendScript = () => {
     // Validate that at least one item is selected
     if (selectedItemsToShare.scripts.length === 0 && selectedItemsToShare.files.length === 0) {
       alert('Please select at least one script or file to share.')
-      return
-    }
-
-    // Limit to 5 total items
-    const totalSelected = selectedItemsToShare.scripts.length + selectedItemsToShare.files.length
-    if (totalSelected > 5) {
-      alert('You can only share up to 5 items at a time. Please deselect some items.')
       return
     }
 
@@ -2282,7 +2314,7 @@ Pastor Michael Adams`,
       selectedItemsToShare.files.includes(file.id)
     )
 
-    // Create attachments for scripts - these have text content
+    // Create attachments for scripts
     const scriptAttachments: UploadedFile[] = selectedScripts.map(script => ({
       id: `script_${script.id}_${Date.now()}`,
       file: new File([script.content], `${script.title}.txt`, { type: 'text/plain' }),
@@ -2291,73 +2323,22 @@ Pastor Michael Adams`,
       type: 'text/plain',
       url: '#',
       uploadProgress: 100,
-      status: 'completed' as const,
-      textContent: script.content  // Store content directly for email attachments
+      status: 'completed' as const
     }))
 
-    // Fetch file content from Supabase storage and convert to base64
-    const fileAttachmentsPromises = selectedFiles.map(async (file) => {
-      try {
-        // If the file has a Supabase storage URL, fetch it
-        if (file.url && file.url.includes('supabase')) {
-          const response = await fetch(file.url)
-          if (response.ok) {
-            const blob = await response.blob()
-            // Convert to base64
-            const base64 = await new Promise<string>((resolve) => {
-              const reader = new FileReader()
-              reader.onloadend = () => {
-                const base64String = reader.result as string
-                // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
-                const base64Content = base64String.split(',')[1] || base64String
-                resolve(base64Content)
-              }
-              reader.readAsDataURL(blob)
-            })
+    // Convert selected files to UploadedFile format
+    const fileAttachments: UploadedFile[] = selectedFiles.map(file => ({
+      id: `file_${file.id}_${Date.now()}`,
+      file: new File([], file.name, { type: file.type }),
+      name: file.name,
+      size: 0, // Will be displayed as file.size string
+      type: file.type,
+      url: file.url || '#',
+      uploadProgress: 100,
+      status: 'completed' as const
+    }))
 
-            return {
-              id: `file_${file.id}_${Date.now()}`,
-              file: new File([], file.name, { type: file.type }),
-              name: file.name,
-              size: blob.size,
-              type: file.type,
-              url: file.url || '#',
-              uploadProgress: 100,
-              status: 'completed' as const,
-              base64Content: base64  // Store base64 content for email attachments
-            } as UploadedFile
-          }
-        }
-
-        // Fallback: return file info without content (will be listed but not attached)
-        return {
-          id: `file_${file.id}_${Date.now()}`,
-          file: new File([], file.name, { type: file.type }),
-          name: file.name,
-          size: 0,
-          type: file.type,
-          url: file.url || '#',
-          uploadProgress: 100,
-          status: 'completed' as const
-        } as UploadedFile
-      } catch (error) {
-        console.error(`Failed to fetch file ${file.name}:`, error)
-        return {
-          id: `file_${file.id}_${Date.now()}`,
-          file: new File([], file.name, { type: file.type }),
-          name: file.name,
-          size: 0,
-          type: file.type,
-          url: file.url || '#',
-          uploadProgress: 100,
-          status: 'completed' as const
-        } as UploadedFile
-      }
-    })
-
-    const fileAttachments = await Promise.all(fileAttachmentsPromises)
-
-    // Combine script attachments with file attachments
+    // Combine script attachments with selected files
     const allAttachments = [...scriptAttachments, ...fileAttachments]
 
     // Build message details
@@ -2403,7 +2384,7 @@ ${shareScriptForm.body}`)
 
     const totalItems = selectedScripts.length + selectedFiles.length
     console.log(`Shared ${totalItems} item(s) to: ${recipient}`)
-    // Removed popup - success logged to console
+    alert(`Successfully shared ${totalItems} item(s) with ${recipient}!`)
   }
 
   const handleContractAction = (contractId: number, action: string) => {
@@ -2554,7 +2535,7 @@ pastor.michael@ordainedpro.com`
     }
 
     // Add to messaging platform
-    setNewMessage(`’° Payment Reminder sent to: ${recipient}\n[SCRIPT]„ Subject: ${paymentReminderForm.subject}\n\n${paymentReminderForm.body}`)
+    setNewMessage(`ðŸ’° Payment Reminder sent to: ${recipient}\n[SCRIPT]„ Subject: ${paymentReminderForm.subject}\n\n${paymentReminderForm.body}`)
 
     // Auto-send the message
     setTimeout(() => {
@@ -2927,64 +2908,35 @@ Note: This is an initial draft. Further development needed to incorporate specif
     alert("Couple information updated successfully!")
   }
 
-  const handleOpenEditWeddingDialog = async () => {
-    const coupleDbId = editCoupleInfo?.id
-    const coupleName = `${editCoupleInfo?.brideName || 'Partner 1'} & ${editCoupleInfo?.groomName || 'Partner 2'}`
-
-    // Load wedding details from server (Supabase)
-    if (coupleDbId) {
-      console.log("[WEDDING] Loading wedding details from server for couple:", coupleDbId)
-      const result = await loadWeddingDetailsFromDB(coupleDbId)
-
-      if (result.ok && result.data) {
-        setEditWeddingDetails(result.data)
-        console.log("[WEDDING] Loaded wedding details from server:", result.data)
-      } else {
-        console.log("[WEDDING] No wedding details found on server, using defaults")
-      }
+  const handleOpenEditWeddingDialog = () => {
+    // Load saved data for current couple when opening the form
+    const coupleId = `${editCoupleInfo?.brideName || 'Partner 1'} & ${editCoupleInfo?.groomName || 'Partner 2'}`
+    if (savedWeddingDetails[coupleId]) {
+      setEditWeddingDetails(savedWeddingDetails[coupleId])
+      console.log("Loading saved wedding details for:", coupleId, savedWeddingDetails[coupleId])
     }
-
     setShowEditWeddingDialog(true)
   }
 
-  const handleEditWeddingDetails = async () => {
-    const coupleDbId = editCoupleInfo?.id
+  const handleEditWeddingDetails = () => {
     const coupleId = `${editCoupleInfo?.brideName || 'Partner 1'} & ${editCoupleInfo?.groomName || 'Partner 2'}`
 
-    if (!coupleDbId) {
-      console.error("No couple ID found, cannot save wedding details")
-      alert("Error: No couple selected")
-      return
-    }
+    // Save the updated wedding details for the current couple
+    setSavedWeddingDetails(prev => ({
+      ...prev,
+      [coupleId]: { ...editWeddingDetails }
+    }))
 
-    // Save to Supabase (server-side storage only)
-    console.log("[WEDDING] Saving wedding details to server for couple:", coupleDbId)
-    const result = await saveWeddingDetailsToDB(coupleDbId, {
-      venueName: editWeddingDetails.venueName || "",
-      venueAddress: editWeddingDetails.venueAddress || "",
-      weddingDate: editWeddingDetails.weddingDate || "",
-      startTime: editWeddingDetails.startTime || "",
-      endTime: editWeddingDetails.endTime || "",
-      expectedGuests: editWeddingDetails.expectedGuests || "",
-      officiantNotes: editWeddingDetails.officiantNotes || ""
-    })
-
-    if (!result.ok) {
-      console.error("Failed to save wedding details:", result.error)
-      alert(`Error saving wedding details: ${result.error}`)
-      return
-    }
-
-    // Update the wedding details in allCouples array (local state for UI)
+    // Update the wedding details in allCouples array
     const updatedCouples = [...allCouples]
     updatedCouples[activeCoupleIndex].weddingDetails = { ...editWeddingDetails }
     setAllCouples(updatedCouples)
 
-    console.log("[WEDDING] Wedding details saved to server for:", coupleId)
+    console.log("Saving wedding details for:", coupleId, editWeddingDetails)
     setShowEditWeddingDialog(false)
 
     // Show success message
-    alert(`Wedding details for ${coupleId} saved to server!`)
+    alert(`Wedding details for ${coupleId} saved successfully!`)
   }
 
   const handleSwitchCouple = (index: number) => {
@@ -3219,9 +3171,9 @@ Note: This is an initial draft. Further development needed to incorporate specif
 
   const generateTaskReminderEmail = (task: Task, isOfficiant: boolean, coupleName: string, officiantName: string) => {
     const priorityEmoji: Record<string, string> = {
-      low: 'Ÿ¢',
-      medium: 'Ÿ¡',
-      high: 'Ÿ ',
+      low: 'ðŸŸ¢',
+      medium: 'ðŸŸ¡',
+      high: 'ðŸŸ ',
       urgent: '[DOC]´'
     }
 
@@ -3396,7 +3348,7 @@ OrdainedPro Wedding Portal
       const statusMessages = {
         accepted: 'âœ… Meeting accepted by couple!',
         declined: 'âŒ Meeting declined by couple. Please reschedule.',
-        confirmed: '[CELEBRATE] Meeting confirmed!',
+        confirmed: 'ðŸŽ‰ Meeting confirmed!',
         pending: 'â³ Meeting response pending...'
       }
 
@@ -3438,11 +3390,11 @@ OrdainedPro Wedding Portal
   const getMeetingTypeIcon = (type: string) => {
     switch (type) {
       case 'video':
-        return '’»'
+        return 'ðŸ’»'
       case 'phone':
         return '[SCRIPT]ž'
       case 'in-person':
-        return '[USERS]'
+        return 'ðŸ‘¥'
       default:
         return '[SCRIPT]…'
     }
@@ -3839,29 +3791,6 @@ OrdainedPro Wedding Portal
         try {
           console.log(`[SCRIPT]§ Attempting to send email to: ${email}`)
 
-          // Build attachments array - include both scripts (textContent) and files (base64Content)
-          const emailAttachments = messageAttachments
-            .filter(att => att.textContent || att.base64Content)
-            .map(att => {
-              if (att.textContent) {
-                // Script: text content
-                return {
-                  filename: att.name,
-                  content: att.textContent,
-                  contentType: 'text'
-                }
-              } else if (att.base64Content) {
-                // File: base64 content
-                return {
-                  filename: att.name,
-                  content: att.base64Content,
-                  contentType: 'base64'
-                }
-              }
-              return null
-            })
-            .filter(Boolean)
-
           const response = await fetch("/api/send-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -3872,9 +3801,7 @@ OrdainedPro Wedding Portal
               fromName: officiantName,
               coupleName: coupleName,
               coupleId: coupleId,
-              officiantId: currentUser?.id,
-              // Include all attachments (scripts and files)
-              attachments: emailAttachments
+              officiantId: currentUser?.id
             })
           })
 
@@ -3960,7 +3887,7 @@ OrdainedPro Wedding Portal
 Congratulations on your upcoming wedding! Please find your ceremony services invoice attached.
 
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-ŽŠ WEDDING CEREMONY INVOICE ŽŠ
+ðŸŽŠ WEDDING CEREMONY INVOICE ðŸŽŠ
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 COUPLE: ${invoiceForm.coupleName}
@@ -4007,7 +3934,7 @@ Pastor Michael Adams
 Licensed Wedding Officiant
 [SCRIPT]ž (555) 987-6543
 [SCRIPT]§ pastor.michael@ordainedpro.com
-Œ www.ordainedpro.com
+ðŸŒ www.ordainedpro.com
 
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•`
   }
@@ -4068,11 +3995,11 @@ Licensed Wedding Officiant
 
 Couple: ${invoiceForm.coupleName}
 Sent to: ${recipients}
-§¾ Invoice #: ${invoiceForm.invoiceNumber}
-’’ Wedding Date: ${new Date(invoiceForm.weddingDate).toLocaleDateString()}
-›ï¸ Venue: ${invoiceForm.venue}
+ðŸ§¾ Invoice #: ${invoiceForm.invoiceNumber}
+ðŸ’’ Wedding Date: ${new Date(invoiceForm.weddingDate).toLocaleDateString()}
+ðŸ›ï¸ Venue: ${invoiceForm.venue}
 
-’° FINANCIAL SUMMARY:
+ðŸ’° FINANCIAL SUMMARY:
 * Total Services: ${invoiceForm.total}
 * Deposit Paid: ${invoiceForm.depositPaid}
 * Balance Due: ${invoiceForm.balanceDue}
@@ -4081,7 +4008,7 @@ Sent to: ${recipients}
 [SCRIPT]‹ SERVICES INCLUDED:
 ${invoiceForm.items.map(item => `* ${item.service} - ${item.quantity * item.rate}`).join('\n')}
 
-’³ Payment Methods: ${invoiceForm.paymentMethods}
+ðŸ’³ Payment Methods: ${invoiceForm.paymentMethods}
 
 ${invoiceContent}`)
     setShowAttachments(true)
@@ -4175,7 +4102,7 @@ ${invoiceContent}`)
       return
     }
 
-    // [CELEBRATE] Trigger confetti celebration!
+    // ðŸŽ‰ Trigger confetti celebration!
     confetti({
       particleCount: 100,
       spread: 70,
@@ -4559,7 +4486,7 @@ ${invoiceContent}`)
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
-          <div className="text-6xl mb-4">’’</div>
+          <div className="text-6xl mb-4">ðŸ’’</div>
           <h2 className="text-2xl font-bold text-blue-900 mb-2">No Ceremonies Yet</h2>
           <p className="text-gray-600 mb-6">
             You haven't added any couples/ceremonies yet. Add your first ceremony to get started!
