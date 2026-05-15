@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { supabase } from "@/supabase/utils/client"
+import { supabase, isSupabaseConfigured } from "@/supabase/utils/client"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
@@ -10,6 +10,15 @@ export default function AuthForm() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [nextUrl, setNextUrl] = useState("/")
+
+    // Check if Supabase is configured on mount
+    useEffect(() => {
+        if (!isSupabaseConfigured()) {
+            console.error("Supabase is not configured! Check environment variables.")
+        } else {
+            console.log("Supabase configured correctly")
+        }
+    }, [])
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -34,14 +43,22 @@ export default function AuthForm() {
 
         try {
             if (isLogin) {
-                console.log("📧 Attempting login...")
-                const { data, error } = await supabase.auth.signInWithPassword({
+                console.log("Attempting login...")
+
+                // Add timeout to prevent hanging forever
+                const loginPromise = supabase.auth.signInWithPassword({
                     email,
                     password
                 })
 
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error("Login timed out. Please check your connection and try again.")), 15000)
+                })
+
+                const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any
+
                 if (error) {
-                    console.error("❌ Login error:", error.message)
+                    console.error("Login error:", error.message)
                     throw error
                 }
 
@@ -49,7 +66,7 @@ export default function AuthForm() {
                     throw new Error("No session returned from login")
                 }
 
-                console.log("✅ Login successful:", {
+                console.log("Login successful:", {
                     hasSession: !!data.session,
                     email: data.user?.email
                 })

@@ -38,7 +38,7 @@ export async function POST(request: Request) {
           bride_email,
           groom_email
         ),
-        officiant_profiles!tasks_user_id_fkey (
+        profiles!tasks_user_id_fkey (
           full_name,
           email
         )
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     for (const task of tasksNeedingReminders) {
       try {
         const couple = task.couples as any
-        const officiant = task.officiant_profiles as any
+        const officiant = task.profiles as any
 
         // Build recipient list
         const recipients = [

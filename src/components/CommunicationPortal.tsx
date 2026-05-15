@@ -574,7 +574,7 @@ export function CommunicationPortal({ onScriptUploaded, user }: CommunicationPor
 
           // Load profile with auth user
           const { data: profile } = await supabase
-            .from("officiant_profiles")
+            .from("profiles")
             .select("*")
             .eq("user_id", authUser.id)
             .single()
@@ -590,7 +590,7 @@ export function CommunicationPortal({ onScriptUploaded, user }: CommunicationPor
 
         // Load officiant profile
         const { data: profile, error: profileError } = await supabase
-          .from("officiant_profiles")
+          .from("profiles")
           .select("*")
           .eq("user_id", userId)
           .single()
