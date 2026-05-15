@@ -204,6 +204,87 @@ export async function updateCouple(coupleId: number, updates: Partial<Couple>): 
 }
 
 // ============================================
+// WEDDING DETAILS (server-side only)
+// ============================================
+
+export interface WeddingDetails {
+  venueName: string
+  venueAddress: string
+  weddingDate: string
+  startTime: string
+  endTime: string
+  expectedGuests: string
+  officiantNotes: string
+}
+
+export async function saveWeddingDetails(
+  coupleId: number,
+  details: WeddingDetails
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    console.log("[WEDDING] Saving wedding details for couple:", coupleId, details)
+
+    const { error } = await supabase
+      .from("couples")
+      .update({
+        venue_name: details.venueName || null,
+        venue_address: details.venueAddress || null,
+        wedding_date: details.weddingDate || null,
+        start_time: details.startTime || null,
+        end_time: details.endTime || null,
+        expected_guests: details.expectedGuests ? parseInt(details.expectedGuests) : null,
+        notes: details.officiantNotes || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", coupleId)
+
+    if (error) {
+      console.error("[ERROR] Error saving wedding details:", error)
+      return { ok: false, error: error.message }
+    }
+
+    console.log("[OK] Wedding details saved for couple:", coupleId)
+    return { ok: true }
+  } catch (err: any) {
+    console.error("[ERROR] Exception saving wedding details:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+export async function loadWeddingDetails(
+  coupleId: number
+): Promise<{ ok: boolean; data?: WeddingDetails; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from("couples")
+      .select("venue_name, venue_address, wedding_date, start_time, end_time, expected_guests, notes")
+      .eq("id", coupleId)
+      .single()
+
+    if (error) {
+      console.error("[ERROR] Error loading wedding details:", error)
+      return { ok: false, error: error.message }
+    }
+
+    const weddingDetails: WeddingDetails = {
+      venueName: data.venue_name || "",
+      venueAddress: data.venue_address || "",
+      weddingDate: data.wedding_date || "",
+      startTime: data.start_time || "",
+      endTime: data.end_time || "",
+      expectedGuests: data.expected_guests?.toString() || "",
+      officiantNotes: data.notes || ""
+    }
+
+    console.log("[OK] Loaded wedding details for couple:", coupleId)
+    return { ok: true, data: weddingDetails }
+  } catch (err: any) {
+    console.error("[ERROR] Exception loading wedding details:", err)
+    return { ok: false, error: err.message }
+  }
+}
+
+// ============================================
 // TASKS (per couple)
 // ============================================
 

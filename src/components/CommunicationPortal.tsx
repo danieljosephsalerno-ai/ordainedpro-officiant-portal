@@ -32,7 +32,9 @@ import {
   addScript as addScriptToDB,
   updateScript as updateScriptInDB,
   deleteScript as deleteScriptFromDB,
-  autoSaveScript as autoSaveScriptToDB
+  autoSaveScript as autoSaveScriptToDB,
+  saveWeddingDetails as saveWeddingDetailsToDB,
+  loadWeddingDetails as loadWeddingDetailsFromDB
 } from "@/services/couple-data-service"
 import { PortalHeader } from "./communication-portal/CeremoniesCouples/PortalHeader"
 import { PortalOverview } from "./communication-portal/CeremoniesCouples/PortalOverview"
@@ -561,7 +563,7 @@ export function CommunicationPortal({ onScriptUploaded }: CommunicationPortalPro
 
         // Load officiant profile
         const { data: profile, error: profileError } = await supabase
-          .from("officiant_profiles")
+          .from("profiles")
           .select("*")
           .eq("user_id", user.id)
           .single()
@@ -2925,35 +2927,64 @@ Note: This is an initial draft. Further development needed to incorporate specif
     alert("Couple information updated successfully!")
   }
 
-  const handleOpenEditWeddingDialog = () => {
-    // Load saved data for current couple when opening the form
-    const coupleId = `${editCoupleInfo?.brideName || 'Partner 1'} & ${editCoupleInfo?.groomName || 'Partner 2'}`
-    if (savedWeddingDetails[coupleId]) {
-      setEditWeddingDetails(savedWeddingDetails[coupleId])
-      console.log("Loading saved wedding details for:", coupleId, savedWeddingDetails[coupleId])
+  const handleOpenEditWeddingDialog = async () => {
+    const coupleDbId = editCoupleInfo?.id
+    const coupleName = `${editCoupleInfo?.brideName || 'Partner 1'} & ${editCoupleInfo?.groomName || 'Partner 2'}`
+
+    // Load wedding details from server (Supabase)
+    if (coupleDbId) {
+      console.log("[WEDDING] Loading wedding details from server for couple:", coupleDbId)
+      const result = await loadWeddingDetailsFromDB(coupleDbId)
+
+      if (result.ok && result.data) {
+        setEditWeddingDetails(result.data)
+        console.log("[WEDDING] Loaded wedding details from server:", result.data)
+      } else {
+        console.log("[WEDDING] No wedding details found on server, using defaults")
+      }
     }
+
     setShowEditWeddingDialog(true)
   }
 
-  const handleEditWeddingDetails = () => {
+  const handleEditWeddingDetails = async () => {
+    const coupleDbId = editCoupleInfo?.id
     const coupleId = `${editCoupleInfo?.brideName || 'Partner 1'} & ${editCoupleInfo?.groomName || 'Partner 2'}`
 
-    // Save the updated wedding details for the current couple
-    setSavedWeddingDetails(prev => ({
-      ...prev,
-      [coupleId]: { ...editWeddingDetails }
-    }))
+    if (!coupleDbId) {
+      console.error("No couple ID found, cannot save wedding details")
+      alert("Error: No couple selected")
+      return
+    }
 
-    // Update the wedding details in allCouples array
+    // Save to Supabase (server-side storage only)
+    console.log("[WEDDING] Saving wedding details to server for couple:", coupleDbId)
+    const result = await saveWeddingDetailsToDB(coupleDbId, {
+      venueName: editWeddingDetails.venueName || "",
+      venueAddress: editWeddingDetails.venueAddress || "",
+      weddingDate: editWeddingDetails.weddingDate || "",
+      startTime: editWeddingDetails.startTime || "",
+      endTime: editWeddingDetails.endTime || "",
+      expectedGuests: editWeddingDetails.expectedGuests || "",
+      officiantNotes: editWeddingDetails.officiantNotes || ""
+    })
+
+    if (!result.ok) {
+      console.error("Failed to save wedding details:", result.error)
+      alert(`Error saving wedding details: ${result.error}`)
+      return
+    }
+
+    // Update the wedding details in allCouples array (local state for UI)
     const updatedCouples = [...allCouples]
     updatedCouples[activeCoupleIndex].weddingDetails = { ...editWeddingDetails }
     setAllCouples(updatedCouples)
 
-    console.log("Saving wedding details for:", coupleId, editWeddingDetails)
+    console.log("[WEDDING] Wedding details saved to server for:", coupleId)
     setShowEditWeddingDialog(false)
 
     // Show success message
-    alert(`Wedding details for ${coupleId} saved successfully!`)
+    alert(`Wedding details for ${coupleId} saved to server!`)
   }
 
   const handleSwitchCouple = (index: number) => {
