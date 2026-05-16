@@ -9,7 +9,7 @@ import PortalClient from "./PortalClient"
 export default function ClientAuthGuard() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'redirecting'>('checking')
 
   useEffect(() => {
     // Fast auth check using getSession() - this is instant (checks local storage only)
@@ -20,6 +20,7 @@ export default function ClientAuthGuard() {
         // Safety check - make sure supabase is available
         if (!supabase || !supabase.auth) {
           console.error("❌ Supabase client not available")
+          setAuthState('redirecting')
           router.replace("/auth")
           return
         }
@@ -29,6 +30,7 @@ export default function ClientAuthGuard() {
 
         if (error) {
           console.error("❌ Session error:", error.message)
+          setAuthState('redirecting')
           router.replace("/auth")
           return
         }
@@ -36,6 +38,7 @@ export default function ClientAuthGuard() {
         // If no session in local storage, redirect to login IMMEDIATELY
         if (!session?.user) {
           console.log("❌ No session found, redirecting to login")
+          setAuthState('redirecting')
           router.replace("/auth")
           return
         }
@@ -43,10 +46,11 @@ export default function ClientAuthGuard() {
         // Session exists - user is authenticated
         console.log("✅ User authenticated:", session.user.email)
         setUser(session.user)
-        setLoading(false)
+        setAuthState('authenticated')
 
       } catch (error) {
         console.error("Auth check error:", error)
+        setAuthState('redirecting')
         router.replace("/auth")
       }
     }
@@ -59,10 +63,11 @@ export default function ClientAuthGuard() {
 
       if (event === 'SIGNED_OUT' || !session?.user) {
         setUser(null)
+        setAuthState('redirecting')
         router.replace("/auth")
       } else if (session?.user) {
         setUser(session.user)
-        setLoading(false)
+        setAuthState('authenticated')
       }
     })
 
@@ -71,8 +76,13 @@ export default function ClientAuthGuard() {
     }
   }, [router])
 
-  // Show minimal loading only while checking local session (should be instant)
-  if (loading) {
+  // If redirecting to auth, show nothing (redirect is happening)
+  if (authState === 'redirecting') {
+    return null
+  }
+
+  // Show minimal loading only while checking (should be instant)
+  if (authState === 'checking') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="text-center">
@@ -85,7 +95,6 @@ export default function ClientAuthGuard() {
 
   // User is authenticated - render the portal
   if (!user) {
-    // This shouldn't happen, but redirect just in case
     router.replace("/auth")
     return null
   }
