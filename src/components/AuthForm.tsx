@@ -52,7 +52,7 @@ export default function AuthForm() {
                 })
 
                 const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error("Login timed out. Please check your connection and try again.")), 30000)
+                    setTimeout(() => reject(new Error("Login timed out. Please check your connection and try again.")), 45000)
                 })
 
                 const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any
