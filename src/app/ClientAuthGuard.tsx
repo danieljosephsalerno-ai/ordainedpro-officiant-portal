@@ -16,13 +16,21 @@ export default function ClientAuthGuard() {
   // Supabase client is a singleton - no need for useMemo
 
   useEffect(() => {
-    // Check current session
+    // Check current session with timeout protection
     const checkAuth = async () => {
+      // Set a timeout to prevent infinite loading
+      const authTimeout = setTimeout(() => {
+        console.error("❌ Auth check timed out after 15 seconds")
+        setAuthError("Authentication timed out. Please refresh the page.")
+        setLoading(false)
+      }, 15000)
+
       try {
         console.log("🔍 Checking authentication...")
 
         // Safety check - make sure supabase is available
         if (!supabase || !supabase.auth) {
+          clearTimeout(authTimeout)
           console.error("❌ Supabase client not available")
           setAuthError("Authentication service unavailable")
           setLoading(false)
@@ -37,6 +45,7 @@ export default function ClientAuthGuard() {
         }
 
         if (session?.user) {
+          clearTimeout(authTimeout)
           console.log("✅ User authenticated via session:", session.user.email)
           setUser(session.user)
           setLoading(false)
@@ -46,6 +55,7 @@ export default function ClientAuthGuard() {
         // Fallback to getUser() which validates with server
         const { data: { user }, error } = await supabase.auth.getUser()
 
+        clearTimeout(authTimeout)
         console.log("🔍 Auth check result:", {
           hasUser: !!user,
           email: user?.email,
@@ -64,6 +74,7 @@ export default function ClientAuthGuard() {
         setUser(user)
         setLoading(false)
       } catch (error) {
+        clearTimeout(authTimeout)
         console.error("Auth check error:", error)
         setAuthError("Authentication check failed")
         setIsRedirecting(true)
@@ -101,10 +112,18 @@ export default function ClientAuthGuard() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">
-            {isRedirecting ? "Redirecting to login..." : "Loading..."}
+            {isRedirecting ? "Redirecting to login..." : "Checking authentication..."}
           </p>
           {authError && (
-            <p className="text-red-500 text-sm mt-2">{authError}</p>
+            <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-red-600 text-sm">{authError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 text-sm text-blue-600 hover:underline"
+              >
+                Click here to refresh
+              </button>
+            </div>
           )}
         </div>
       </div>

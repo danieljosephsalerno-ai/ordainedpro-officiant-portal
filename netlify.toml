@@ -1,4 +1,4 @@
-# Updated: 2026-05-16 - Fixed post-login flow
+# Updated: 2026-05-16 v486 - Fixed loading hangs and auth timeout
 [build]
   command = "npm install --legacy-peer-deps && npm run build"
   publish = ".next"

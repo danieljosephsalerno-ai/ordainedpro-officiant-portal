@@ -610,8 +610,10 @@ export function CommunicationPortal({ onScriptUploaded, user }: CommunicationPor
   // Load couples from database
   useEffect(() => {
     const loadCouples = async () => {
+      // If no user, stop loading state and return
       if (!currentUser?.id) {
         console.log("Waiting for currentUser before loading couples...")
+        setIsLoadingCouples(false) // Don't hang in loading state
         return
       }
 
@@ -962,12 +964,13 @@ export function CommunicationPortal({ onScriptUploaded, user }: CommunicationPor
 
   const loadScriptsForUser = useCallback(async () => {
     if (!currentUser?.id) {
-        console.log("Waiting for currentUser before loading couples...")
-        return
-      }
+      console.log("Waiting for currentUser before loading scripts...")
+      setIsLoadingScripts(false) // Don't hang in loading state
+      return
+    }
 
     setIsLoadingScripts(true)
-    console.log("[SCRIPT]œ Loading scripts for user:", currentUser.id)
+    console.log("[SCRIPT] Loading scripts for user:", currentUser.id)
 
     const result = await loadScriptsFromDB(currentUser.id, editCoupleInfo?.id)
 
