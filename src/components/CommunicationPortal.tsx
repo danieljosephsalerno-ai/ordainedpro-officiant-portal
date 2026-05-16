@@ -619,7 +619,15 @@ export function CommunicationPortal({ onScriptUploaded, user }: CommunicationPor
       console.log("Loading couples for user:", currentUser.id)
 
       try {
-        const result = await loadCouplesFromDB(currentUser.id)
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Couples loading timed out after 15 seconds")), 15000)
+        })
+
+        const loadPromise = loadCouplesFromDB(currentUser.id)
+        const result = await Promise.race([loadPromise, timeoutPromise]) as { ok: boolean; data?: any[]; error?: string }
+
+        console.log("Couples load result:", result.ok, "count:", result.data?.length || 0)
 
         if (result.ok && result.data && result.data.length > 0) {
           // Transform database format to component format
