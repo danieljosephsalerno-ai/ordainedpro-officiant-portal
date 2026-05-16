@@ -1,5 +1,6 @@
+# Updated: 2026-05-16 - Fixed RLS policies
 [build]
-  command = "npm install && npm run build"
+  command = "bun install && bun run build"
   publish = ".next"
 
 [build.environment]

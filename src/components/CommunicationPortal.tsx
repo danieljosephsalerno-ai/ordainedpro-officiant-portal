@@ -4477,49 +4477,47 @@ ${invoiceContent}`)
   }
 
 
-  // Show loading state while couples are loading
-  if (isLoadingCouples) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-blue-900 font-medium">Loading your ceremonies...</p>
-        </div>
-      </div>
-    )
-  }
+  // Determine if we have ceremonies to show
+  const hasNoCeremonies = !editCoupleInfo || allCouples.length === 0
 
-  // Show message if no couples exist
-  if (!editCoupleInfo || allCouples.length === 0) {
-    return (
-      <CommunicationPortalProvider value={portalContextValue}>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto p-8">
-            <div className="text-6xl mb-4">💍</div>
-            <h2 className="text-2xl font-bold text-blue-900 mb-2">No Ceremonies Yet</h2>
-            <p className="text-gray-600 mb-6">
-              You haven't added any couples/ceremonies yet. Add your first ceremony to get started!
-            </p>
-            <Button
-              onClick={() => setShowAddCeremonyDialog(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Add Your First Ceremony
-            </Button>
-          </div>
-        </div>
-        <PortalDialogs />
-      </CommunicationPortalProvider>
-    )
-  }
-
+  // Always render the dashboard structure - never show full-page replacement screens
   return (
     <CommunicationPortalProvider value={portalContextValue}>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
         <PortalHeader />
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <PortalOverview />
-          <PortalTabs />
+          {/* Show loading indicator within dashboard */}
+          {isLoadingCouples ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-blue-900 font-medium">Loading your ceremonies...</p>
+              </div>
+            </div>
+          ) : hasNoCeremonies ? (
+            /* Show empty state within dashboard if no ceremonies */
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center max-w-md mx-auto p-8 bg-white rounded-2xl shadow-lg">
+                <div className="text-6xl mb-4">💍</div>
+                <h2 className="text-2xl font-bold text-blue-900 mb-2">Welcome to Your Dashboard</h2>
+                <p className="text-gray-600 mb-6">
+                  You haven't added any couples/ceremonies yet. Add your first ceremony to get started managing your wedding officiant business!
+                </p>
+                <Button
+                  onClick={() => setShowAddCeremonyDialog(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Add Your First Ceremony
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Normal dashboard content with ceremonies */
+            <>
+              <PortalOverview />
+              <PortalTabs />
+            </>
+          )}
         </div>
         <PortalDialogs />
       </div>

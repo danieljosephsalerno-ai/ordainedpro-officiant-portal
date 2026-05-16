@@ -1,0 +1,140 @@
+🔍 Checking authentication...
+layout-3aef441c24506405.js:1 Creating Supabase client (singleton)
+page-4932b9d6e5b37caf.js:1 🔄 Auth state changed: 
+{event: 'SIGNED_IN', hasUser: true}
+page-4932b9d6e5b37caf.js:1 Editor Ref: 
+{current: null}
+page-4932b9d6e5b37caf.js:1 Loading profile for user: 6377e315-ac26-4b63-a80c-499da0355c49
+page-4932b9d6e5b37caf.js:1 Loading couples for user: 6377e315-ac26-4b63-a80c-499da0355c49
+page-4932b9d6e5b37caf.js:1 [SCRIPT]œ Loading scripts for user: 6377e315-ac26-4b63-a80c-499da0355c49
+684-220a20f4f4e43dd7.js:1 Error loading couples: Error: Couples loading timed out after 15 seconds
+    at page-4932b9d6e5b37caf.js:1:348084
+window.console.error	@	684-220a20f4f4e43dd7.js:1
+(anonymous)	@	page-4932b9d6e5b37caf.js:1
+await in (anonymous)		
+(anonymous)	@	page-4932b9d6e5b37caf.js:1
+oq	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+um	@	4bd1b696-3f31a22d7465107d.js:1
+uh	@	4bd1b696-3f31a22d7465107d.js:1
+iS	@	4bd1b696-3f31a22d7465107d.js:1
+iw	@	4bd1b696-3f31a22d7465107d.js:1
+iV	@	4bd1b696-3f31a22d7465107d.js:1
+iR	@	4bd1b696-3f31a22d7465107d.js:1
+ib	@	4bd1b696-3f31a22d7465107d.js:1
+ig	@	4bd1b696-3f31a22d7465107d.js:1
+u9	@	4bd1b696-3f31a22d7465107d.js:1
+u5	@	4bd1b696-3f31a22d7465107d.js:1
+iH	@	4bd1b696-3f31a22d7465107d.js:1
+w	@	684-220a20f4f4e43dd7.js:1
+postMessage		
+l	@	684-220a20f4f4e43dd7.js:1
+w	@	684-220a20f4f4e43dd7.js:1
+postMessage		
+l	@	684-220a20f4f4e43dd7.js:1
+w	@	684-220a20f4f4e43dd7.js:1
+postMessage		
+l	@	684-220a20f4f4e43dd7.js:1
+w	@	684-220a20f4f4e43dd7.js:1
+postMessage		
+l	@	684-220a20f4f4e43dd7.js:1
+w	@	684-220a20f4f4e43dd7.js:1
+postMessage		
+l	@	684-220a20f4f4e43dd7.js:1
+w	@	684-220a20f4f4e43dd7.js:1
+postMessage		
+l	@	684-220a20f4f4e43dd7.js:1
+w	@	684-220a20f4f4e43dd7.js:1
+postMessage		
+l	@	684-220a20f4f4e43dd7.js:1
+w	@	684-220a20f4f4e43dd7.js:1
+postMessage		
+l	@	684-220a20f4f4e43dd7.js:1
+t.unstable_scheduleCallback	@	684-220a20f4f4e43dd7.js:1
+ij	@	4bd1b696-3f31a22d7465107d.js:1
+iU	@	4bd1b696-3f31a22d7465107d.js:1
+(anonymous)	@	4bd1b696-3f31a22d7465107d.js:1

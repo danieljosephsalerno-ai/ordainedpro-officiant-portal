@@ -163,22 +163,38 @@ export async function addCeremony(userId: string, ceremonyData: {
 }
 
 export async function loadCouples(userId: string): Promise<{ ok: boolean; data?: Couple[]; error?: string }> {
+  console.log("[COUPLES] Starting query for user:", userId)
+
   try {
+    // Use AbortController for proper timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      console.log("[COUPLES] Aborting query due to timeout")
+      controller.abort()
+    }, 10000) // 10 second timeout
+
     const { data, error } = await supabase
       .from("couples")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
+      .abortSignal(controller.signal)
+
+    clearTimeout(timeoutId)
 
     if (error) {
-      console.error("[ERROR] Error loading couples:", error)
+      console.error("[COUPLES] Supabase error:", error.code, error.message, error.details)
       return { ok: false, error: error.message }
     }
 
-    console.log("[OK] Loaded", data?.length || 0, "couples")
+    console.log("[COUPLES] Query successful, found", data?.length || 0, "couples")
     return { ok: true, data: data || [] }
   } catch (err: any) {
-    console.error("[ERROR] Exception loading couples:", err)
+    if (err.name === 'AbortError') {
+      console.error("[COUPLES] Query was aborted (timeout)")
+      return { ok: false, error: "Query timed out" }
+    }
+    console.error("[COUPLES] Exception:", err.name, err.message)
     return { ok: false, error: err.message }
   }
 }
