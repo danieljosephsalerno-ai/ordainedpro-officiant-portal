@@ -1,7 +1,8 @@
-# Updated: 2026-05-16 - Fixed RLS policies
+# Updated: 2026-05-16 - Fixed post-login flow
 [build]
-  command = "bun install && bun run build"
+  command = "npm install --legacy-peer-deps && npm run build"
   publish = ".next"
+  base = "/"
 
 [build.environment]
   NODE_VERSION = "20"
