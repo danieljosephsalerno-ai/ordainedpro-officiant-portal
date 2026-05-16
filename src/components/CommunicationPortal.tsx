@@ -4492,21 +4492,24 @@ ${invoiceContent}`)
   // Show message if no couples exist
   if (!editCoupleInfo || allCouples.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="text-6xl mb-4">ðŸ’’</div>
-          <h2 className="text-2xl font-bold text-blue-900 mb-2">No Ceremonies Yet</h2>
-          <p className="text-gray-600 mb-6">
-            You haven't added any couples/ceremonies yet. Add your first ceremony to get started!
-          </p>
-          <Button
-            onClick={() => setShowAddCeremonyDialog(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Add Your First Ceremony
-          </Button>
+      <CommunicationPortalProvider value={portalContextValue}>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto p-8">
+            <div className="text-6xl mb-4">💍</div>
+            <h2 className="text-2xl font-bold text-blue-900 mb-2">No Ceremonies Yet</h2>
+            <p className="text-gray-600 mb-6">
+              You haven't added any couples/ceremonies yet. Add your first ceremony to get started!
+            </p>
+            <Button
+              onClick={() => setShowAddCeremonyDialog(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Add Your First Ceremony
+            </Button>
+          </div>
         </div>
-      </div>
+        <PortalDialogs />
+      </CommunicationPortalProvider>
     )
   }
 
