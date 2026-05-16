@@ -45,14 +45,14 @@ export default function AuthForm() {
             if (isLogin) {
                 console.log("Attempting login...")
 
-                // Add timeout to prevent hanging forever
+                // Increase timeout to 30 seconds for slower connections
                 const loginPromise = supabase.auth.signInWithPassword({
                     email,
                     password
                 })
 
                 const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error("Login timed out. Please check your connection and try again.")), 15000)
+                    setTimeout(() => reject(new Error("Login timed out. Please check your connection and try again.")), 30000)
                 })
 
                 const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any
