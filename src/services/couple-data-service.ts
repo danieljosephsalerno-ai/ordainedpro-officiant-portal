@@ -171,7 +171,7 @@ export async function loadCouples(userId: string): Promise<{ ok: boolean; data?:
     const timeoutId = setTimeout(() => {
       console.log("[COUPLES] Aborting query due to timeout")
       controller.abort()
-    }, 10000) // 10 second timeout
+    }, 45000) // 45 second timeout for slower connections
 
     const { data, error } = await supabase
       .from("couples")

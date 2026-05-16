@@ -615,7 +615,7 @@ export function PortalHeader() {
               <PopoverTrigger asChild>
                 <button className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
                   <Avatar className="ring-2 ring-blue-100">
-                    <AvatarImage src="/api/placeholder/32/32" />
+                    <AvatarImage src="" />
                     <AvatarFallback className="bg-blue-500 text-white">PM</AvatarFallback>
                   </Avatar>
                   <div className="text-right">

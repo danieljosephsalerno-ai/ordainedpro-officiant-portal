@@ -715,7 +715,7 @@ export function CommunicationPortal({ onScriptUploaded, user }: CommunicationPor
           role: msg.sender,
           message: msg.content,
           timestamp: formatMessageTime(msg.created_at),
-          avatar: "/api/placeholder/40/40"
+          avatar: ""
         }))
 
         setMessages(formattedMessages)
@@ -2794,26 +2794,46 @@ Note: This is an initial draft. Further development needed to incorporate specif
     { id: 3, title: "Rustic Barn Wedding", author: "Minister Lisa K.", price: 24, rating: 4.7, sales: 98 }
   ]
 
-  const handleAddCeremony = () => {
+  const handleAddCeremony = async () => {
     // Validate that required fields are filled
     if (!newCeremony.ceremonyName || !newCeremony.brideName || !newCeremony.groomName) {
       alert("Please fill in Ceremony Name, Bride Name, and Groom Name")
       return
     }
 
-    // Save the ceremony with a unique ID and creation timestamp
-    const ceremonyToSave = {
-      ...newCeremony,
-      id: Date.now(),
-      createdAt: new Date().toISOString()
+    if (!currentUser?.id) {
+      alert("Please log in to add a ceremony")
+      return
     }
 
-    setSavedCeremonies(prev => [...prev, ceremonyToSave])
-    console.log("Ceremony saved:", ceremonyToSave)
+    // Save to Supabase database
+    const { addCeremony } = await import("@/services/couple-data-service")
+    const dbResult = await addCeremony(currentUser.id, {
+      brideName: newCeremony.brideName,
+      groomName: newCeremony.groomName,
+      brideEmail: newCeremony.brideEmail || undefined,
+      groomEmail: newCeremony.groomEmail || undefined,
+      bridePhone: newCeremony.bridePhone || undefined,
+      groomPhone: newCeremony.groomPhone || undefined,
+      venueName: newCeremony.venueName || undefined,
+      venueAddress: newCeremony.venueAddress || undefined,
+      ceremonyDate: newCeremony.ceremonyDate || undefined,
+      ceremonyTime: newCeremony.ceremonyTime || undefined,
+      expectedGuests: newCeremony.expectedGuests || undefined,
+      notes: newCeremony.notes || undefined
+    })
 
-    // Create the new couple object
+    if (!dbResult.ok || !dbResult.data) {
+      console.error("Failed to save ceremony to database:", dbResult.error)
+      alert("Failed to save ceremony. Please try again. Error: " + (dbResult.error || "Unknown error"))
+      return
+    }
+
+    console.log("Ceremony saved to database:", dbResult.data)
+
+    // Create the new couple object with the REAL database ID
     const newCouple = {
-      id: Date.now(), // Generate a unique ID
+      id: dbResult.data.id, // Use the real database ID
       brideName: newCeremony.brideName,
       brideEmail: newCeremony.brideEmail,
       bridePhone: newCeremony.bridePhone,
@@ -2825,8 +2845,8 @@ Note: This is an initial draft. Further development needed to incorporate specif
       address: "",
       emergencyContact: "",
       specialRequests: newCeremony.notes,
-      isActive: true, // New ceremonies are active by default
-      colors: getCoupleColors(allCouples.length + 1), // Assign consistent colors based on position
+      isActive: true,
+      colors: getCoupleColors(allCouples.length + 1),
       weddingDetails: {
         venueName: newCeremony.venueName,
         venueAddress: newCeremony.venueAddress,
@@ -2838,11 +2858,11 @@ Note: This is an initial draft. Further development needed to incorporate specif
       }
     }
 
-    // Add the new couple to allCouples array so it appears in Switch Ceremony dialog
+    // Add the new couple to allCouples array
     setAllCouples(prev => [...prev, newCouple])
 
     // Set the newly created couple as the active couple
-    setActiveCoupleIndex(allCouples.length) // Index of the new couple
+    setActiveCoupleIndex(allCouples.length)
     setEditCoupleInfo(newCouple)
 
     // Save wedding details for this couple
@@ -2870,7 +2890,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
       officiantNotes: ""
     })
 
-    console.log("New couple added to allCouples array:", newCouple)
+    console.log("New couple added with database ID:", newCouple.id)
     console.log("Total couples now:", allCouples.length + 1)
 
     // Reset form and close dialog
@@ -2897,7 +2917,7 @@ Note: This is an initial draft. Further development needed to incorporate specif
     setShowAddCeremonyDialog(false)
 
     // Show success message
-    alert(`Ceremony "${ceremonyToSave.ceremonyName}" for ${newCeremony.brideName} & ${newCeremony.groomName} has been saved successfully!\n\nThis couple has been added to your ceremony list and you can now switch to them using the "Switch Ceremony" button.`)
+    alert(`Ceremony "${newCeremony.ceremonyName}" for ${newCeremony.brideName} & ${newCeremony.groomName} has been saved to database!\n\nThis couple has been added to your ceremony list.`)
   }
 
   const handleEditCoupleInfo = () => {
@@ -3424,7 +3444,7 @@ OrdainedPro Wedding Portal
         return (
           <div className="flex justify-center">
             <img
-              src={contract.file.url || `/api/placeholder/800/600`}
+              src={contract.file.url || ``}
               alt={contract.name}
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />
@@ -3533,7 +3553,7 @@ OrdainedPro Wedding Portal
       return (
         <div className="flex justify-center">
           <img
-            src={file.url || `/api/placeholder/800/600`}
+            src={file.url || ``}
             alt={file.name}
             className="max-w-full max-h-[70vh] object-contain rounded-lg"
           />
@@ -3784,7 +3804,7 @@ OrdainedPro Wedding Portal
             role: "officiant",
             message: newMessage,
             timestamp: "Just now",
-            avatar: "/api/placeholder/40/40"
+            avatar: ""
           }])
         }
       }

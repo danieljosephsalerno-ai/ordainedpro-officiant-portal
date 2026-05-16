@@ -211,7 +211,7 @@ export function PortalOverview() {
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className={`ring-2 ${colors.brideRing || 'ring-pink-100'}`}>
-                    <AvatarImage src="/api/placeholder/40/40" />
+                    <AvatarImage src="" />
                     <AvatarFallback className={`${colors.bride || 'bg-pink-500'} text-white`}>
                       {getInitials(editCoupleInfo?.brideName)}
                     </AvatarFallback>
@@ -229,7 +229,7 @@ export function PortalOverview() {
                 )}
                 <div className="flex items-center space-x-3">
                   <Avatar className={`ring-2 ${colors.groomRing || 'ring-blue-100'}`}>
-                    <AvatarImage src="/api/placeholder/40/40" />
+                    <AvatarImage src="" />
                     <AvatarFallback className={`${colors.groom || 'bg-blue-500'} text-white`}>
                       {getInitials(editCoupleInfo?.groomName)}
                     </AvatarFallback>
@@ -271,7 +271,7 @@ export function PortalOverview() {
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="w-12 h-12 ring-2 ring-blue-100">
-                    <AvatarImage src="/api/placeholder/48/48" />
+                    <AvatarImage src="" />
                     <AvatarFallback className="bg-blue-500 text-white">PM</AvatarFallback>
                   </Avatar>
                   <div>
